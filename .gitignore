@@ -1,0 +1,16 @@
+# Datalake y Datamarts
+datalake/
+datamarts/
+control/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.pytest_cache/
+
+# Java y Maven
+target/
+*.class
+.idea/
+*.iml
