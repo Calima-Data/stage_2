@@ -6,17 +6,17 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATALAKE_DIR = BASE_DIR / "datalake" / "book_based" / "books"
 DATAMARTS_DIR = BASE_DIR / "datamarts"
-DB_PATH = DATAMARTS_DIR / "metadata.db"
+# Cambiamos la ruta para unificarlo en la misma base de datos del índice
+DB_PATH = DATAMARTS_DIR / "inverted_index.db"
 
 def init_db():
-    """Crea la base de datos y la tabla si no existen."""
     DATAMARTS_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Tabla normalizada para los metadatos
+    # Cambiamos el nombre de la tabla a 'books' como exige el documento
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS metadata (
+        CREATE TABLE IF NOT EXISTS books (
             book_id INTEGER PRIMARY KEY,
             title TEXT,
             author TEXT,
@@ -27,7 +27,6 @@ def init_db():
     return conn
 
 def extract_metadata(header_text: str) -> dict:
-    """Extrae Título, Autor e Idioma usando expresiones regulares."""
     title_match = re.search(r"Title:\s*(.*)", header_text)
     author_match = re.search(r"Author:\s*(.*)", header_text)
     lang_match = re.search(r"Language:\s*(.*)", header_text)
@@ -39,9 +38,8 @@ def extract_metadata(header_text: str) -> dict:
     }
 
 def process_metadata():
-    """Recorre el datalake, extrae la información y la guarda en SQLite."""
     if not DATALAKE_DIR.exists():
-        print("Error: No se encontró el Datalake. Ejecuta datalake.py primero.")
+        print("Error: No se encontró el Datalake.")
         return
 
     conn = init_db()
@@ -50,7 +48,6 @@ def process_metadata():
 
     print("Iniciando extracción de metadatos...")
     
-    # Recorremos cada carpeta de libro en el datalake
     for book_dir in DATALAKE_DIR.iterdir():
         if book_dir.is_dir():
             book_id = int(book_dir.name)
@@ -60,9 +57,8 @@ def process_metadata():
                 text = header_file.read_text(encoding="utf-8")
                 meta = extract_metadata(text)
                 
-                # Usamos REPLACE por si ejecutamos el script varias veces, para que actualice y no duplique
                 cursor.execute('''
-                    INSERT OR REPLACE INTO metadata (book_id, title, author, language)
+                    INSERT OR REPLACE INTO books (book_id, title, author, language)
                     VALUES (?, ?, ?, ?)
                 ''', (book_id, meta["title"], meta["author"], meta["language"]))
                 
@@ -71,7 +67,13 @@ def process_metadata():
     
     conn.commit()
     conn.close()
-    print(f"\n¡Proceso completado! {procesados} libros guardados en {DB_PATH}")
+    print(f"\n¡Proceso completado! {procesados} libros guardados en la tabla 'books' de {DB_PATH}")
+    
+    # Opcional: Borrar el archivo viejo metadata.db si existe para no confundirnos
+    old_db = DATAMARTS_DIR / "metadata.db"
+    if old_db.exists():
+        old_db.unlink()
+        print("Archivo antiguo metadata.db eliminado para mantener limpio el directorio.")
 
 if __name__ == "__main__":
     process_metadata()
