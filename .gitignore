@@ -14,3 +14,9 @@ target/
 *.class
 .idea/
 *.iml
+worker_java/out/
+worker_java/lib/
+
+# Benchmark temp dirs
+datalake_benchmark_tmp*/
+index_benchmark_tmp*/
