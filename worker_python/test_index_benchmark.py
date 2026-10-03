@@ -81,12 +81,14 @@ def insert_folders(book_id, words):
                 for i in sorted(list(existing)):
                     f.write(f"{i}\n")
 
-# Ejecutamos pruebas limitadas para evitar colapsar la máquina local
+# rounds=8 con 3 de warmup, para igualar la configuración de JMH en worker_java
+# (@Warmup(iterations = 3) @Measurement(iterations = 8)) y que las tres
+# implementaciones midan el mismo trabajo en las mismas condiciones.
 def test_index_sqlite(benchmark):
-    benchmark.pedantic(insert_sqlite, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=5, iterations=1)
+    benchmark.pedantic(insert_sqlite, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=8, iterations=1, warmup_rounds=3)
 
 def test_index_json(benchmark):
-    benchmark.pedantic(insert_json, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=5, iterations=1)
+    benchmark.pedantic(insert_json, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=8, iterations=1, warmup_rounds=3)
 
 def test_index_folders(benchmark):
-    benchmark.pedantic(insert_folders, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=5, iterations=1)
+    benchmark.pedantic(insert_folders, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=8, iterations=1, warmup_rounds=3)
