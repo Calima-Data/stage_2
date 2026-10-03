@@ -1,0 +1,7 @@
+Benchmark                       Mode  Cnt     Score     Error  Units
+DatalakeBenchmark.bookBased     avgt    5  1011,448 ± 514,972  ms/op
+DatalakeBenchmark.rangeBased    avgt    5  1029,653 ± 332,306  ms/op
+DatalakeBenchmark.timeBased     avgt    5  1209,083 ± 154,039  ms/op
+IndexBenchmark.folderHierarchy  avgt    8   182,948 ±  17,334  ms/op
+IndexBenchmark.monolithicJson   avgt    8    14,482 ±   5,065  ms/op
+IndexBenchmark.sqlitePostings   avgt    8     1,281 ±   0,270  ms/op
