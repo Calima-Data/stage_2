@@ -134,11 +134,15 @@ otherwise swamp the measurement. Java uses JMH, Python uses
 | Java (JMH)   | 1209.1 | 1011.4 | 1029.7 |
 | Node.js      | 1613.4 | 1788.2 | 1542.9 |
 
-Java's JMH confidence intervals (±154, ±515, ±332 ms respectively) overlap
-each other, so **within Java the three layouts are not statistically
-distinguishable**. Python and Node.js both make `time_based` the slowest
-layout, which is consistent with it concentrating all 1000 files into a
-single `YYYYMMDD/HH` directory while the other two spread them across many.
+Java is the fastest runtime for every layout and Node.js the slowest, but
+**no layout wins in every language**: Python and Java are both fastest with
+`book_based` and slowest with `time_based`, while Node.js is fastest with
+`range_based` and slowest with `book_based`. Java's JMH confidence intervals
+(±154, ±515, ±332 ms respectively) overlap each other, so within Java the
+three layouts are not statistically distinguishable at all. The honest
+reading is that datalake layout has a much weaker effect than the inverted
+index structure below, and that it interacts with the runtime's I/O model
+rather than having one universally best answer.
 
 ### Inverted index — time to insert a 500-term book, mean ms/op
 
