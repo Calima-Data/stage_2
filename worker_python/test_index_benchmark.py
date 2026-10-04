@@ -17,34 +17,46 @@ TEST_BOOK_ID = 9999
 BOOK_WORDS = set(random.sample(VOCABULARY, 450) + [f"new_word{i}" for i in range(50)])
 
 @pytest.fixture(autouse=True)
-def setup_env():
+def cleanup():
+    yield
+    if TEST_DIR.exists():
+        shutil.rmtree(TEST_DIR)
+
+def reset_dir():
     if TEST_DIR.exists():
         shutil.rmtree(TEST_DIR)
     TEST_DIR.mkdir(parents=True)
-    FOLDER_DIR.mkdir()
-    
-    # 1. Prepoblar SQLite con 5.000 palabras
+
+# Los tres "seed_*" dejan el índice en el estado previo a indexar el libro nuevo y se
+# ejecutan antes de CADA ronda (también las de warmup) sin cronometrarse. Si el estado se
+# reutilizara, toda ronda posterior a la primera sería "reinsertar un libro que ya está en
+# el índice", una operación distinta y más barata que indexar un libro nuevo.
+def seed_sqlite():
+    reset_dir()
     conn = sqlite3.connect(DB_PATH)
     conn.execute('CREATE TABLE postings (term TEXT, book_id INTEGER, PRIMARY KEY (term, book_id))')
     conn.executemany('INSERT INTO postings (term, book_id) VALUES (?, ?)', [(w, 1) for w in VOCABULARY])
     conn.commit()
     conn.close()
-    
-    # 2. Prepoblar JSON con 5.000 palabras
+    return (TEST_BOOK_ID, BOOK_WORDS), {}
+
+def seed_json():
+    reset_dir()
     with open(JSON_PATH, "w") as f:
         json.dump({w: [1] for w in VOCABULARY}, f)
-        
-    # 3. Prepoblar Carpetas (solo creamos las que vamos a tocar para no alargar el setup del test)
+    return (TEST_BOOK_ID, BOOK_WORDS), {}
+
+def seed_folders():
+    reset_dir()
+    FOLDER_DIR.mkdir()
+    # solo existen los ficheros de las palabras del libro que ya estaban en el vocabulario
     for w in BOOK_WORDS:
         if w in VOCABULARY:
             letter_dir = FOLDER_DIR / w[0].upper()
             letter_dir.mkdir(exist_ok=True)
             with open(letter_dir / f"{w}.txt", "w") as f:
                 f.write("1\n")
-                
-    yield
-    if TEST_DIR.exists():
-        shutil.rmtree(TEST_DIR)
+    return (TEST_BOOK_ID, BOOK_WORDS), {}
 
 def insert_json(book_id, words):
     with open(JSON_PATH, "r") as f:
@@ -69,24 +81,24 @@ def insert_folders(book_id, words):
         letter_dir = FOLDER_DIR / w[0].upper()
         letter_dir.mkdir(exist_ok=True)
         word_file = letter_dir / f"{w}.txt"
-        
+
         existing = set()
         if word_file.exists():
             with open(word_file, "r") as f:
                 existing = set(int(line.strip()) for line in f if line.strip().isdigit())
-        
+
         if book_id not in existing:
             existing.add(book_id)
             with open(word_file, "w") as f:
                 for i in sorted(list(existing)):
                     f.write(f"{i}\n")
 
-# Ejecutamos pruebas limitadas para evitar colapsar la máquina local
+# 3 rondas de warmup + 8 medidas, igual que @Warmup/@Measurement de JMH en worker_java.
 def test_index_sqlite(benchmark):
-    benchmark.pedantic(insert_sqlite, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=5, iterations=1)
+    benchmark.pedantic(insert_sqlite, setup=seed_sqlite, rounds=8, iterations=1, warmup_rounds=3)
 
 def test_index_json(benchmark):
-    benchmark.pedantic(insert_json, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=5, iterations=1)
+    benchmark.pedantic(insert_json, setup=seed_json, rounds=8, iterations=1, warmup_rounds=3)
 
 def test_index_folders(benchmark):
-    benchmark.pedantic(insert_folders, args=(TEST_BOOK_ID, BOOK_WORDS), rounds=5, iterations=1)
+    benchmark.pedantic(insert_folders, setup=seed_folders, rounds=8, iterations=1, warmup_rounds=3)

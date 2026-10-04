@@ -14,3 +14,15 @@ target/
 *.class
 .idea/
 *.iml
+worker_java/out/
+worker_java/lib/
+
+# Node.js
+node_modules/
+
+# Benchmark temp dirs
+datalake_benchmark_tmp*/
+index_benchmark_tmp*/
+
+# JMH output
+worker_java/jmh-results.txt
