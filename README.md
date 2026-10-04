@@ -42,7 +42,7 @@ against fully isolated temporary directories that are deleted afterwards.
   book's header (title, author, language) into a SQLite `books` table.
 - **Inverted index** — 3 structures benchmarked, each with its own control
   file so re-runs don't re-index a book twice:
-  - Monolithic JSON file (`datamart_index.py` / `DatalakeBenchmark`-style port)
+  - Monolithic JSON file (`datamart_index.py`)
   - Hierarchical folders, one `.txt` per term (`datamart_index_folder.py`)
   - Normalized SQLite table `postings(term, book_id)` (`datamart_index_sqlite.py`)
 
@@ -79,30 +79,45 @@ pytest test_index_benchmark.py -v --benchmark-columns=min,max,mean,median,stddev
 
 ### Java
 
-Maven project targeting **Java 11**, benchmarked with [JMH](https://openjdk.java.net/projects/code-tools/jmh/).
-Benchmarks live in `src/test/java`, as in the course's `jmh-project` example.
+Maven project targeting **Java 11** (any JDK from 11 up works), benchmarked with
+[JMH](https://openjdk.java.net/projects/code-tools/jmh/). Benchmarks live in
+`src/test/java`, as in the course's `jmh-project` example.
 
 ```bash
 cd worker_java
 
-mvn clean compile
-mvn exec:java -Dexec.mainClass=org.calima.Datalake -Dexec.classpathScope=compile  # download sample books
+# download the sample books into ../datalake (Java's own layouts and control file)
+mvn compile exec:exec -Dexec.classpathScope=compile "-Dexec.args=-classpath %classpath org.calima.Datalake"
 
-mvn clean test-compile exec:java    # runs the whole JMH suite (both benchmarks)
+# run the whole JMH suite (datalake + index benchmarks, about 10 minutes)
+mvn test-compile exec:exec
 ```
 
-To run a single benchmark class, pass a regex through to the harness:
+To run only some benchmarks, append a regex for JMH to the arguments:
 
 ```bash
-mvn clean test-compile exec:java -Dexec.args="IndexBenchmark"
+mvn test-compile exec:exec "-Dexec.args=-classpath %classpath org.openjdk.jmh.Main IndexBenchmark"
 ```
+
+Two details worth knowing, both handled in `pom.xml`:
+
+- **JDK 23+ needs the annotation processor named explicitly.** Since JDK 23, `javac` no
+  longer runs processors it merely finds on the classpath, so with the plain JMH
+  dependencies from the course template the build still reports `BUILD SUCCESS` but
+  generates no benchmarks (`target/generated-test-sources` stays empty and JMH has nothing
+  to run). `pom.xml` lists `jmh-generator-annprocess` under `annotationProcessorPaths`,
+  which works on every JDK.
+- **Run JMH with `exec:exec`, not `exec:java`.** JMH forks a fresh JVM for each benchmark
+  and re-uses the parent's classpath; under `exec:java` that classpath is Maven's own, so
+  the fork cannot find the benchmark classes.
 
 The benchmark classes can also be launched directly from IntelliJ with the
 [JMH plugin](https://plugins.jetbrains.com/plugin/7529-jmh-java-microbenchmark-harness).
 
 ### Node.js
 
-Requires Node.js 22+ (uses the built-in `node:sqlite` module, no npm install needed).
+Requires Node.js **22.13+** (or 23.4+): it uses the built-in `node:sqlite` module, which is
+only available without an experimental flag from those versions. No `npm install` needed.
 
 ```bash
 cd worker_node
@@ -116,49 +131,64 @@ node indexBenchmark.js    # inverted-index benchmark
 Captured on a single development machine — re-run before writing the final
 report, numbers will vary by hardware.
 
-**Methodology.** All three languages measure the same unit of work: writing
-1000 synthetic books under one datalake layout, and inserting one 500-term
-book (450 terms already present, 50 new) into an index pre-populated with a
-5000-term vocabulary. Every run discards warmup rounds before measuring —
-2 warmup + 5 measured for the datalake benchmark, 3 warmup + 8 measured for
-the index benchmark — because the first rounds pay JIT compilation (JVM),
-native-library loading (sqlite-jdbc) and OS disk-cache warming, which
-otherwise swamp the measurement. Java uses JMH, Python uses
-`pytest-benchmark`'s `pedantic` mode, Node.js uses a `process.hrtime` harness.
+**Methodology.** All three languages measure the same unit of work, always from a
+clean starting state: ingesting 1000 synthetic books into an **empty** datalake under
+one layout, and adding one **new** 500-term book (450 terms already in the index, 50
+new) to an index freshly rebuilt with a 5000-term vocabulary. The state is rebuilt
+before every round, including warmup rounds, and that rebuilding is not timed.
+This matters: if the datalake or index were reused between rounds, only the first round
+would create files and directories (later ones would just overwrite them) and only the
+first would actually insert the book (later ones would re-insert a book that is already
+there), so the layouts would no longer be compared on the work that distinguishes them.
+Warmup (2 rounds for the datalake benchmark, 3 for the index benchmark, then 5 and 8
+measured rounds) warms the JVM, the interpreter and the OS, not the data. Java uses JMH
+(`Level.Invocation` setup), Python uses `pytest-benchmark`'s `pedantic` mode with a
+`setup` hook, Node.js uses a `process.hrtime` harness.
 
-### Datalake structures — time to write 1000 books, mean ms/op
+### Datalake layouts — time to ingest 1000 books, mean ms
 
 | Language | time_based | book_based | range_based |
 |---|---|---|---|
-| Python       | 1509.4 | 1151.8 | 1194.7 |
-| Java (JMH)   | 1209.1 | 1011.4 | 1029.7 |
-| Node.js      | 1613.4 | 1788.2 | 1542.9 |
+| Python       | 1887.8 | 2103.0 | 1907.9 |
+| Java (JMH)   | 1277.0 | 1765.3 | 1742.3 |
+| Node.js      | 2341.5 | 2389.4 | 2430.5 |
 
-Java is the fastest runtime for every layout and Node.js the slowest, but
-**no layout wins in every language**: Python and Java are both fastest with
-`book_based` and slowest with `time_based`, while Node.js is fastest with
-`range_based` and slowest with `book_based`. Java's JMH confidence intervals
-(±154, ±515, ±332 ms respectively) overlap each other, so within Java the
-three layouts are not statistically distinguishable at all. The honest
-reading is that datalake layout has a much weaker effect than the inverted
-index structure below, and that it interacts with the runtime's I/O model
-rather than having one universally best answer.
+`time_based` is the fastest layout or tied for fastest in all three languages, and
+`book_based` is never the fastest. The effect is small: the best-to-worst gap within a
+language is 1.04× (Node.js), 1.11× (Python) and 1.38× (Java), against 1.35–1.83×
+between languages for the same layout, so here the runtime matters more than the
+layout. Java's JMH confidence intervals (±136, ±386 and ±462 ms) nearly touch for
+`time_based` versus the other two, so even the Java ordering is marginal. This is a
+useful result for the design decision: `time_based` is the layout the brief recommends
+for traceability and incremental processing, and it costs nothing at ingest.
 
-### Inverted index — time to insert a 500-term book, mean ms/op
+### Inverted index — time to add a new 500-term book, mean ms
 
 | Language | SQLite postings | JSON monolithic | Folder hierarchy |
 |---|---|---|---|
-| Python       | 1.44 | 34.90 | 215.11 |
-| Java (JMH)   | 1.28 | 14.48 | 182.95 |
-| Node.js      | 1.82 |  5.59 | 572.63 |
+| Python       | 9.81 | 38.73 | 458.67 |
+| Java (JMH)   | 9.93 | 14.13 | 309.75 |
+| Node.js      | 9.42 |  6.83 | 622.96 |
 
-The ranking is identical in all three languages: **the SQLite postings table
-beats both file-based structures by two orders of magnitude**, monolithic
-JSON sits in the middle, and the folder-per-term hierarchy is slowest because
-each update opens, reads and rewrites hundreds of small files. The spread
-between structures (≈140×) dwarfs the spread between languages (≈1.4× for
-SQLite), which is the central result of this stage: **the storage structure
-dominates, the language runtime is secondary**.
+Three separate findings:
+
+- **The folder-per-term hierarchy is 31–66× slower than SQLite in all three languages**,
+  because adding one book means opening, reading and rewriting about 500 small files.
+  This is the one ranking that never changes.
+- **SQLite costs 9.4–9.9 ms in every language** (a 1.05× spread). That is the price of a
+  durable transaction: the time is dominated by committing to disk, so the runtime
+  hardly matters.
+- **JSON monolithic depends on the language** (6.8 ms in Node.js, 14.1 in Java, 38.7 in
+  Python, a 5.7× spread) because it is CPU-bound parsing and serializing the whole file,
+  and at this deliberately small size (5000 terms, about 60 KB) it is competitive with
+  SQLite: it is faster in Node.js, within noise in Java (JMH ±2.3 ms vs ±7.7 ms) and
+  about 4× slower in Python. We did **not** measure how it scales: it rewrites the entire
+  file on every update, so its cost grows with the size of the index while SQLite's
+  does not, and the gap at a realistic index size would be much larger than shown here.
+
+The first row of the earlier version of this table showed SQLite at 1.3–1.8 ms. That was
+wrong: the harness reused the index between rounds, so after the first round SQLite was
+only re-inserting rows that already existed, which writes nothing.
 
 ## Sample data
 
