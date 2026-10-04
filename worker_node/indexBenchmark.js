@@ -28,17 +28,21 @@ function shuffle(arr) {
   return a;
 }
 
-async function setup() {
+async function resetDir() {
   if (existsSync(TEST_DIR)) await rm(TEST_DIR, { recursive: true, force: true });
   await mkdir(TEST_DIR, { recursive: true });
-  await mkdir(FOLDER_DIR, { recursive: true });
+}
 
+function makeWorkload() {
   vocabulary = Array.from({ length: VOCAB_SIZE }, (_, i) => `word${i}`);
   const shuffled = shuffle(vocabulary);
   bookWords = new Set(shuffled.slice(0, 450));
   for (let i = 0; i < 50; i++) bookWords.add(`new_word${i}`);
+}
 
-  // 1. SQLite: 5000 words -> book_id 1
+// SQLite: 5000 words -> book_id 1
+async function seedSqlite() {
+  await resetDir();
   const db = new DatabaseSync(DB_PATH);
   db.exec("CREATE TABLE postings (term TEXT, book_id INTEGER, PRIMARY KEY (term, book_id))");
   const insert = db.prepare("INSERT INTO postings (term, book_id) VALUES (?, ?)");
@@ -46,13 +50,20 @@ async function setup() {
   for (const w of vocabulary) insert.run(w, 1);
   db.exec("COMMIT");
   db.close();
+}
 
-  // 2. JSON: 5000 words -> [1]
+// JSON: 5000 words -> [1]
+async function seedJson() {
+  await resetDir();
   const index = {};
   for (const w of vocabulary) index[w] = [1];
   await writeFile(JSON_PATH, JSON.stringify(index), "utf-8");
+}
 
-  // 3. Folders: only words that are both in bookWords and vocabulary
+// Folders: only the words of the new book that already exist in the vocabulary get a file
+async function seedFolders() {
+  await resetDir();
+  await mkdir(FOLDER_DIR, { recursive: true });
   const vocabSet = new Set(vocabulary);
   for (const w of bookWords) {
     if (vocabSet.has(w)) {
@@ -100,13 +111,19 @@ async function insertFolders() {
   }
 }
 
-async function time(op) {
+// `op` mide una ronda; `seed` deja el índice en el estado previo a indexar el libro nuevo y
+// se ejecuta antes de CADA ronda (también las de warmup) sin cronometrarse. Si el estado se
+// reutilizara, toda ronda posterior a la primera sería "reinsertar un libro que ya está en
+// el índice", una operación distinta y más barata que indexar un libro nuevo.
+async function time(seed, op) {
   for (let w = 0; w < WARMUP_ROUNDS; w++) {
+    await seed();
     await op();
   }
 
   const timesMs = [];
   for (let r = 0; r < ROUNDS; r++) {
+    await seed();
     const start = process.hrtime.bigint();
     await op();
     const end = process.hrtime.bigint();
@@ -134,14 +151,10 @@ async function main() {
     `Inverted index benchmark (Node.js) - ${WARMUP_ROUNDS} warmup + ${ROUNDS} measured rounds, 5000-word vocabulary, +500-word book`
   );
 
-  await setup();
-  const sqliteTimes = await time(insertSqlite);
-
-  await setup();
-  const jsonTimes = await time(insertJson);
-
-  await setup();
-  const folderTimes = await time(insertFolders);
+  makeWorkload();
+  const sqliteTimes = await time(seedSqlite, insertSqlite);
+  const jsonTimes = await time(seedJson, insertJson);
+  const folderTimes = await time(seedFolders, insertFolders);
 
   printStats("index_sqlite", sqliteTimes);
   printStats("index_json", jsonTimes);

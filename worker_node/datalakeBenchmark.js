@@ -45,16 +45,23 @@ async function saveRangeBased(i, rangeSize) {
   await writeFile(path.join(outputPath, `${i}.body.txt`), TEST_BODY, "utf-8");
 }
 
-async function runBenchmark(batchFn) {
+// Se ejecuta antes de CADA ronda (también las de warmup) y no se cronometra. Sin esto, solo
+// la primera ronda crearía carpetas y ficheros y las siguientes los sobrescribirían,
+// ocultando el coste de creación de directorios que distingue a las tres estructuras.
+async function freshDatalake() {
   if (existsSync(TEST_DIR)) await rm(TEST_DIR, { recursive: true, force: true });
   await mkdir(TEST_DIR, { recursive: true });
+}
 
+async function runBenchmark(batchFn) {
   for (let w = 0; w < WARMUP_ROUNDS; w++) {
+    await freshDatalake();
     await batchFn();
   }
 
   const timesMs = [];
   for (let r = 0; r < ROUNDS; r++) {
+    await freshDatalake();
     const start = process.hrtime.bigint();
     await batchFn();
     const end = process.hrtime.bigint();

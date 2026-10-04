@@ -17,19 +17,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
  * JMH benchmark for the three datalake layouts.
  *
- * One operation = storing NUM_BOOKS synthetic books (header + body) under one layout,
- * which is the same unit of work the Python (pytest-benchmark) and Node.js harnesses
- * measure, so the three languages stay comparable. The payload is synthetic on purpose:
- * it keeps network latency out of the measurement and isolates filesystem overhead.
+ * One operation = ingesting NUM_BOOKS synthetic books (header + body) into an EMPTY
+ * datalake. The directory is recreated before every invocation (Level.Invocation, so
+ * it is not timed): without that, only the first invocation would create files and
+ * directories and every later one would just overwrite them, which hides the
+ * directory-creation cost that distinguishes the layouts. Warmup therefore warms the
+ * JVM and the OS, not the datalake. The payload is synthetic on purpose: it keeps
+ * network latency out of the measurement and isolates filesystem overhead. The Python
+ * and Node.js harnesses measure the same operation.
  */
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(java.util.concurrent.TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(1)
+@Warmup(iterations = 2, time = 3)
+@Measurement(iterations = 5, time = 3)
 public class DatalakeBenchmark {
 
     static final int NUM_BOOKS = 1000;
@@ -42,20 +49,20 @@ public class DatalakeBenchmark {
     public static class Lake {
         Path dir;
 
-        @Setup(Level.Iteration)
+        // Level.Invocation is fine here: one invocation takes about a second, far above
+        // the sub-millisecond range where JMH warns its per-invocation hooks distort timing.
+        @Setup(Level.Invocation)
         public void setup() throws IOException {
             dir = Files.createTempDirectory("datalake_bench_java");
         }
 
-        @TearDown(Level.Iteration)
+        @TearDown(Level.Invocation)
         public void tearDown() throws IOException {
             deleteRecursive(dir);
         }
     }
 
     @Benchmark
-    @Warmup(iterations = 2)
-    @Measurement(iterations = 5)
     public void timeBased(Lake lake) throws IOException {
         for (int i = 0; i < NUM_BOOKS; i++) {
             Datalake.saveTimeBased(lake.dir, i, TEST_HEADER, TEST_BODY);
@@ -63,8 +70,6 @@ public class DatalakeBenchmark {
     }
 
     @Benchmark
-    @Warmup(iterations = 2)
-    @Measurement(iterations = 5)
     public void bookBased(Lake lake) throws IOException {
         for (int i = 0; i < NUM_BOOKS; i++) {
             Datalake.saveBookBased(lake.dir, i, TEST_HEADER, TEST_BODY);
@@ -72,8 +77,6 @@ public class DatalakeBenchmark {
     }
 
     @Benchmark
-    @Warmup(iterations = 2)
-    @Measurement(iterations = 5)
     public void rangeBased(Lake lake) throws IOException {
         for (int i = 0; i < NUM_BOOKS; i++) {
             Datalake.saveRangeBased(lake.dir, i, TEST_HEADER, TEST_BODY, RANGE_SIZE);
