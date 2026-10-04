@@ -9,22 +9,21 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jmh.version>1.35</jmh.version>
+
+        <!-- Defaults for `mvn test-compile exec:exec`: run the whole JMH suite on the
+             same JDK that runs Maven. Override exec.args to pick one benchmark class. -->
+        <exec.executable>${java.home}/bin/java</exec.executable>
+        <exec.classpathScope>test</exec.classpathScope>
+        <exec.args>-classpath %classpath org.openjdk.jmh.Main</exec.args>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-core</artifactId>
-            <version>${jmh.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-generator-annprocess</artifactId>
             <version>${jmh.version}</version>
             <scope>test</scope>
         </dependency>
@@ -37,16 +36,27 @@
 
     <build>
         <plugins>
-            <!-- Runs the JMH harness over the benchmarks in src/test/java:
-                 mvn clean test-compile exec:java -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <!-- JDK 23+ no longer runs annotation processors found on the
+                         classpath, so JMH's generator must be named explicitly or the
+                         build succeeds but no benchmarks are generated. -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>${jmh.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
-                <configuration>
-                    <mainClass>org.openjdk.jmh.Main</mainClass>
-                    <classpathScope>test</classpathScope>
-                </configuration>
             </plugin>
         </plugins>
     </build>
