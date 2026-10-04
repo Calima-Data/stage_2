@@ -5,10 +5,10 @@ Search Engine Project · Big Data · Grado en Ciencia e Ingeniería de Datos · 
 Builds the data layer for a simple search engine: a **datalake** that stores
 raw/cleaned books downloaded from [Project Gutenberg](https://www.gutenberg.org/),
 and **datamarts** (metadata + inverted index) that expose that content for
-fast querying. The pipeline and its benchmarks are implemented in three
-languages — **Python, Java and Node.js** — so the datalake and inverted-index
-storage strategies can be compared independently of the implementation
-language.
+fast querying. The complete pipeline (download, metadata extraction, indexing)
+runs in Python; the datalake ingestion and both benchmark suites are also
+implemented in **Java and Node.js**, so the datalake and inverted-index storage
+strategies can be compared independently of the implementation language.
 
 ## Repository structure
 
@@ -128,8 +128,8 @@ node indexBenchmark.js    # inverted-index benchmark
 
 ## Benchmark results (reference run)
 
-Captured on a single development machine — re-run before writing the final
-report, numbers will vary by hardware.
+Captured on a single development machine; absolute numbers will vary with the
+hardware, especially the disk.
 
 **Methodology.** All three languages measure the same unit of work, always from a
 clean starting state: ingesting 1000 synthetic books into an **empty** datalake under
@@ -184,11 +184,7 @@ Three separate findings:
   SQLite: it is faster in Node.js, within noise in Java (JMH ±2.3 ms vs ±7.7 ms) and
   about 4× slower in Python. We did **not** measure how it scales: it rewrites the entire
   file on every update, so its cost grows with the size of the index while SQLite's
-  does not, and the gap at a realistic index size would be much larger than shown here.
-
-The first row of the earlier version of this table showed SQLite at 1.3–1.8 ms. That was
-wrong: the harness reused the index between rounds, so after the first round SQLite was
-only re-inserting rows that already existed, which writes nothing.
+  does not, so the gap should widen as the index grows.
 
 ## Sample data
 
