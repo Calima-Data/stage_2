@@ -157,7 +157,7 @@ En conjunto, el rendimiento pasó de **4,10 a 6,46 libros/s (+58%)**.
 
 1. **Portada del informe:** completar nombres completos y DNI/ID en `stage2/docs/REPORT.md` y regenerar con `python scripts/build_pdf.py docs/REPORT.md`. **Puse el curso 2026/2027 deduciéndolo de las fechas de Git**; compruébalo.
 2. **Repositorio:** el enunciado exige `https://github.com/Calima-Data/stage_2`, y esa es la URL de la portada, pero el trabajo está en la rama `stage-2` del repo `stage_1`. No he creado ni subido nada, y no he comprobado si ya existe. Dímelo cuando quieras subirlo.
-3. **Historial de Git:** el enunciado pide contribuciones de todos los miembros, y los 20 commits nuevos tienen un solo autor. Además se evalúan las contribuciones individuales en la defensa. Es algo que tenéis que resolver como grupo.
+3. **Historial de Git:** el enunciado pide contribuciones de todos los miembros, y los 27 commits nuevos tienen un solo autor. Además se evalúan las contribuciones individuales en la defensa. Es algo que tenéis que resolver como grupo.
 4. **Defensa oral:** este trabajo se hizo con mucha ayuda de una IA, y cada miembro debe poder explicarlo y justificarlo. Lee el informe y `DECISIONS.md`.
 
 ### Limitaciones de las medidas
