@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * The datamart: book metadata and the inverted index, in one SQLite file owned by this service.
@@ -148,7 +149,8 @@ public final class DatamartRepository {
 
     private static void insertBook(Connection c, BookIndex book) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement("INSERT INTO postings (term, book_id, tf) VALUES (?, ?, ?)")) {
-            for (Map.Entry<String, Integer> posting : book.frequencies().entrySet()) {
+            // In the order of the clustered key, each B-tree leaf is visited once: fewer page reloads.
+            for (Map.Entry<String, Integer> posting : new TreeMap<>(book.frequencies()).entrySet()) {
                 ps.setString(1, posting.getKey());
                 ps.setInt(2, book.bookId());
                 ps.setInt(3, posting.getValue());
