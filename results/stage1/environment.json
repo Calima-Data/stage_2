@@ -1,0 +1,52 @@
+{
+  "revision": {
+    "commit": "fac36f212944e96ff6f5dc243337b5ae9fc7ae76",
+    "dirty": false
+  },
+  "os": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+  "python_sqlite_library": "3.49.1",
+  "python_packages": {
+    "requests": "2.32.4",
+    "pytest": "9.1.1",
+    "pytest-benchmark": "5.3.0",
+    "psutil": "7.2.2"
+  },
+  "java_runtime": [
+    "openjdk version \"17.0.20.1\" 2026-08-18",
+    "OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)",
+    "OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)"
+  ],
+  "maven": [
+    "Apache Maven 3.9.6 (bc0240f3c744dd6b6ec2920b3cd08dcc295161ae)",
+    "Maven home: C:\\maven\\apache-maven-3.9.6",
+    "Java version: 17.0.20.1, vendor: Eclipse Adoptium, runtime: C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot"
+  ],
+  "node": [
+    "v24.15.0"
+  ],
+  "worker_java_target": "maven.compiler.release=11 (the bytecode target, not the JVM that runs it)",
+  "worker_java_libraries": {
+    "jmh": "1.35",
+    "sqlite-jdbc": "3.46.1.3"
+  },
+  "workdir": "C:\\Users\\guill\\AppData\\Local\\Temp\\claude\\48f9aeb660d7ef80\\84d05461-3818-4e26-9a3f-a39528fb92d3\\scratchpad\\s1exp",
+  "cpu": {
+    "Name": "AMD Ryzen 7 4800H with Radeon Graphics         ",
+    "NumberOfCores": 8,
+    "NumberOfLogicalProcessors": 16,
+    "MaxClockSpeed": 2900
+  },
+  "ram_bytes": 16505966592,
+  "storage": {
+    "FriendlyName": "INTEL SSDPEKNW512G8L",
+    "MediaType": "SSD",
+    "BusType": "NVMe",
+    "Size": 512110190592
+  },
+  "filesystem": {
+    "FileSystem": "NTFS",
+    "AllocationUnitSize": 4096,
+    "Size": 510769754112
+  }
+}

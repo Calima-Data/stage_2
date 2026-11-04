@@ -31,7 +31,7 @@ import requests
 
 from deploy import JARS, STAGE2, Deployment, Topology
 
-RESULTS = STAGE2.parent / "results" / "stage2" / "integration"
+RESULTS = Path(os.environ.get("BENCH_RESULTS_DIR", STAGE2.parent / "results" / "stage2" / "integration"))
 CORPUS_IDS_FILE = STAGE2 / "fixtures" / "benchmark_corpus_ids.txt"
 FIRST_BOOK_ID = 100001
 PIPELINE_BOOKS = 200

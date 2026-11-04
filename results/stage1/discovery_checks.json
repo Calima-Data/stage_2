@@ -1,0 +1,96 @@
+{
+  "revision": {
+    "commit": "fac36f212944e96ff6f5dc243337b5ae9fc7ae76",
+    "dirty": false
+  },
+  "checks": [
+    {
+      "layout": "time_based",
+      "books_in_layout": 1010,
+      "expected_new_ids": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010
+      ],
+      "discovered_ids": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010
+      ],
+      "match": true
+    },
+    {
+      "layout": "book_based",
+      "books_in_layout": 1010,
+      "expected_new_ids": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010
+      ],
+      "discovered_ids": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010
+      ],
+      "match": true
+    },
+    {
+      "layout": "range_based",
+      "books_in_layout": 1010,
+      "expected_new_ids": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010
+      ],
+      "discovered_ids": [
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010
+      ],
+      "match": true
+    }
+  ],
+  "missing_ids": "900001..900100"
+}

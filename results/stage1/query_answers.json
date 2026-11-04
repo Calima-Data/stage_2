@@ -1,0 +1,358 @@
+{
+  "revision": {
+    "commit": "fac36f212944e96ff6f5dc243337b5ae9fc7ae76",
+    "dirty": true
+  },
+  "corpus_ids": [
+    1342,
+    84,
+    11,
+    16,
+    2701,
+    1661,
+    2000,
+    64317,
+    98,
+    74,
+    345,
+    1952
+  ],
+  "queries": [
+    {
+      "term": "the",
+      "expected_ids": [
+        11,
+        16,
+        74,
+        84,
+        98,
+        345,
+        1342,
+        1661,
+        1952,
+        2701,
+        64317
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          11,
+          16,
+          74,
+          84,
+          98,
+          345,
+          1342,
+          1661,
+          1952,
+          2701,
+          64317
+        ],
+        "json_loaded_in_memory": [
+          11,
+          16,
+          74,
+          84,
+          98,
+          345,
+          1342,
+          1661,
+          1952,
+          2701,
+          64317
+        ],
+        "folder": [
+          11,
+          16,
+          74,
+          84,
+          98,
+          345,
+          1342,
+          1661,
+          1952,
+          2701,
+          64317
+        ],
+        "sqlite": [
+          11,
+          16,
+          74,
+          84,
+          98,
+          345,
+          1342,
+          1661,
+          1952,
+          2701,
+          64317
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "whale",
+      "expected_ids": [
+        84,
+        345,
+        2701
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          84,
+          345,
+          2701
+        ],
+        "json_loaded_in_memory": [
+          84,
+          345,
+          2701
+        ],
+        "folder": [
+          84,
+          345,
+          2701
+        ],
+        "sqlite": [
+          84,
+          345,
+          2701
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "rabbit",
+      "expected_ids": [
+        11,
+        74,
+        98,
+        345,
+        1661
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          11,
+          74,
+          98,
+          345,
+          1661
+        ],
+        "json_loaded_in_memory": [
+          11,
+          74,
+          98,
+          345,
+          1661
+        ],
+        "folder": [
+          11,
+          74,
+          98,
+          345,
+          1661
+        ],
+        "sqlite": [
+          11,
+          74,
+          98,
+          345,
+          1661
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "monster",
+      "expected_ids": [
+        74,
+        84,
+        98,
+        345,
+        2701
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          74,
+          84,
+          98,
+          345,
+          2701
+        ],
+        "json_loaded_in_memory": [
+          74,
+          84,
+          98,
+          345,
+          2701
+        ],
+        "folder": [
+          74,
+          84,
+          98,
+          345,
+          2701
+        ],
+        "sqlite": [
+          74,
+          84,
+          98,
+          345,
+          2701
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "vampire",
+      "expected_ids": [
+        84,
+        345
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          84,
+          345
+        ],
+        "json_loaded_in_memory": [
+          84,
+          345
+        ],
+        "folder": [
+          84,
+          345
+        ],
+        "sqlite": [
+          84,
+          345
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "darcy",
+      "expected_ids": [
+        1342
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          1342
+        ],
+        "json_loaded_in_memory": [
+          1342
+        ],
+        "folder": [
+          1342
+        ],
+        "sqlite": [
+          1342
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "gatsby",
+      "expected_ids": [
+        64317
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          64317
+        ],
+        "json_loaded_in_memory": [
+          64317
+        ],
+        "folder": [
+          64317
+        ],
+        "sqlite": [
+          64317
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "pirate",
+      "expected_ids": [
+        16,
+        74,
+        2701
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          16,
+          74,
+          2701
+        ],
+        "json_loaded_in_memory": [
+          16,
+          74,
+          2701
+        ],
+        "folder": [
+          16,
+          74,
+          2701
+        ],
+        "sqlite": [
+          16,
+          74,
+          2701
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "quijote",
+      "expected_ids": [
+        2000
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          2000
+        ],
+        "json_loaded_in_memory": [
+          2000
+        ],
+        "folder": [
+          2000
+        ],
+        "sqlite": [
+          2000
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "wallpaper",
+      "expected_ids": [
+        1952
+      ],
+      "answers": {
+        "json_reload_per_query": [
+          1952
+        ],
+        "json_loaded_in_memory": [
+          1952
+        ],
+        "folder": [
+          1952
+        ],
+        "sqlite": [
+          1952
+        ]
+      },
+      "all_match_expected": true
+    },
+    {
+      "term": "zzzznotaword",
+      "expected_ids": [],
+      "answers": {
+        "json_reload_per_query": [],
+        "json_loaded_in_memory": [],
+        "folder": [],
+        "sqlite": []
+      },
+      "all_match_expected": true
+    }
+  ]
+}

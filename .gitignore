@@ -26,3 +26,6 @@ index_benchmark_tmp*/
 
 # JMH output
 worker_java/jmh-results.txt
+
+# Throwaway output of run_jmh.py --smoke
+results/stage2/jmh/smoke/

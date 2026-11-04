@@ -1,0 +1,7 @@
+corpus,layout,files,dirs,logical_bytes,allocated_bytes_est,aux_files,aux_bytes,overhead_bytes_est
+real_12_books,time_based,24,2,8208375,8278016,1,62,69641
+real_12_books,book_based,24,13,8208375,8278016,1,62,69641
+real_12_books,range_based,24,4,8208375,8278016,1,62,69641
+synthetic_1000_books,time_based,2000,175,1359000,8192000,0,0,6833000
+synthetic_1000_books,book_based,2000,1001,1359000,8192000,0,0,6833000
+synthetic_1000_books,range_based,2000,1,1359000,8192000,0,0,6833000

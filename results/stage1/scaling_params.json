@@ -1,0 +1,14 @@
+{
+  "revision": {
+    "commit": "fac36f212944e96ff6f5dc243337b5ae9fc7ae76",
+    "dirty": true
+  },
+  "seed": 20261104,
+  "added_books_per_round": 100,
+  "book_terms": {
+    "existing": 450,
+    "new": 50
+  },
+  "warmup_rounds": 1,
+  "rounds": 5
+}

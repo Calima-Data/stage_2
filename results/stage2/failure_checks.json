@@ -1,0 +1,113 @@
+{
+  "total": 17,
+  "passed": 17,
+  "scenarios": [
+    {
+      "scenario": "ingest_crash_after_claim",
+      "passed": true,
+      "seconds": 11.0,
+      "detail": null
+    },
+    {
+      "scenario": "ingest_crash_between_files",
+      "passed": true,
+      "seconds": 11.1,
+      "detail": null
+    },
+    {
+      "scenario": "ingest_crash_before_commit",
+      "passed": true,
+      "seconds": 11.1,
+      "detail": null
+    },
+    {
+      "scenario": "ingest_crash_after_commit",
+      "passed": true,
+      "seconds": 4.8,
+      "detail": null
+    },
+    {
+      "scenario": "index_crash_before_commit",
+      "passed": true,
+      "seconds": 5.8,
+      "detail": null
+    },
+    {
+      "scenario": "rebuild_crash_keeps_published_index",
+      "passed": true,
+      "seconds": 6.2,
+      "detail": null
+    },
+    {
+      "scenario": "control_crash_after_ingest_before_recording",
+      "passed": true,
+      "seconds": 7.0,
+      "detail": null
+    },
+    {
+      "scenario": "control_crash_after_index_before_recording",
+      "passed": true,
+      "seconds": 7.0,
+      "detail": null
+    },
+    {
+      "scenario": "control_crash_after_check_before_recording",
+      "passed": true,
+      "seconds": 7.0,
+      "detail": null
+    },
+    {
+      "scenario": "outage_of_indexing_is_retried",
+      "passed": true,
+      "seconds": 5.5,
+      "detail": null
+    },
+    {
+      "scenario": "outage_of_search_delays_only_the_final_check",
+      "passed": true,
+      "seconds": 5.7,
+      "detail": null
+    },
+    {
+      "scenario": "search_keeps_serving_when_the_pipeline_is_down",
+      "passed": true,
+      "seconds": 4.3,
+      "detail": null
+    },
+    {
+      "scenario": "replica_failover",
+      "passed": true,
+      "seconds": 7.9,
+      "detail": null
+    },
+    {
+      "scenario": "concurrent_duplicates_across_replicas",
+      "passed": true,
+      "seconds": 6.3,
+      "detail": null
+    },
+    {
+      "scenario": "concurrent_distinct_books_across_replicas",
+      "passed": true,
+      "seconds": 5.8,
+      "detail": null
+    },
+    {
+      "scenario": "search_sees_complete_states_during_rebuild",
+      "passed": true,
+      "seconds": 65.3,
+      "detail": {
+        "responses_checked": 29863,
+        "rebuilds": 5,
+        "seconds_rebuilding": 46.3,
+        "books": 40
+      }
+    },
+    {
+      "scenario": "book_appears_only_when_complete",
+      "passed": true,
+      "seconds": 4.0,
+      "detail": null
+    }
+  ]
+}

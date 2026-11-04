@@ -1,0 +1,46 @@
+{
+  "revision": {
+    "commit": "fac36f212944e96ff6f5dc243337b5ae9fc7ae76",
+    "dirty": true
+  },
+  "corpus_ids": [
+    1342,
+    84,
+    11,
+    16,
+    2701,
+    1661,
+    2000,
+    64317,
+    98,
+    74,
+    345,
+    1952
+  ],
+  "books_in_metadata": 12,
+  "metadata_issues": [],
+  "distinct_terms": {
+    "json": 51469,
+    "folder": 51469,
+    "sqlite": 51469,
+    "ground_truth": 51469
+  },
+  "postings_total": {
+    "json": 102612,
+    "folder": 102612,
+    "sqlite": 102612,
+    "ground_truth": 102612
+  },
+  "json_equals_folder": true,
+  "json_equals_sqlite": true,
+  "all_equal_ground_truth": true,
+  "digest_first_run": {
+    "books": "239d3b20d4674101b8e620d80a3a499c57b5fc83bcbb5fbd42e3d4cfbef6d437",
+    "sqlite_postings": "7416b2ea9b2b0626fd34a9065a40a8ec8d0be9053a3e86efef2f2e23e8c28cd4",
+    "json": "42a20f48998fe350c2f4460f4e8bb294203774862302f0178cebd63ed3ba48a4",
+    "folder": "42a20f48998fe350c2f4460f4e8bb294203774862302f0178cebd63ed3ba48a4"
+  },
+  "rerun_preserves_state": true,
+  "reindex_after_clearing_tracking_preserves_state": true,
+  "downloaded_control_has_no_duplicates": true
+}
