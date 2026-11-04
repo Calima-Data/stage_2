@@ -95,6 +95,17 @@ def test_lookup_returns_same_ids_in_all_structures(run, tmp_path):
     assert answers == {"json": [1, 2], "folder": [1, 2], "sqlite": [1, 2]}
 
 
+def test_words_with_non_ascii_letters_or_underscores_are_indexed(run):
+    BOOKS[4] = ("Delta", "Dee", "Spanish", "un libro en español con _cursiva_ final")
+    try:
+        assert run("coordinator.py", 4).returncode == 0
+        for term in ("español", "cursiva"):
+            assert json.loads(run("lookup.py", term, "--json").stdout) == {
+                "json": [4], "folder": [4], "sqlite": [4]}, term
+    finally:
+        del BOOKS[4]
+
+
 def test_lookup_of_a_missing_term_is_empty_not_an_error(run):
     assert run("coordinator.py", 1).returncode == 0
     result = run("lookup.py", "unicorn", "--json")

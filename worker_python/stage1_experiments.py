@@ -336,10 +336,12 @@ def ground_truth(base):
     truth = {}
     for body in (base / "datalake" / "book_based" / "books").glob("*/body.txt"):
         book_id = int(body.parent.name)
-        words = re.split(rb"[^a-z0-9]+", body.read_text(encoding="utf-8").lower().encode("ascii", "replace"))
+        # Una palabra es una secuencia de caracteres alfanuméricos: se recorre carácter a
+        # carácter para no depender de la expresión regular que usa el indexador.
+        text = body.read_text(encoding="utf-8").lower()
+        words = "".join(c if c.isalnum() else " " for c in text).split()
         for word in set(words):
-            if word:
-                truth.setdefault(word.decode(), []).append(book_id)
+            truth.setdefault(word, []).append(book_id)
     return {term: sorted(ids) for term, ids in truth.items()}
 
 

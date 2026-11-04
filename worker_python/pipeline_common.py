@@ -31,7 +31,10 @@ INDEXED_FOLDER_FILE = CONTROL_DIR / "indexed_books_folder.txt"
 
 DEFAULT_BOOK_IDS_FILE = REPO_DIR / "config" / "book_ids.txt"
 
-_TOKEN = re.compile(r"\b[a-z0-9]+\b")
+# Letras y dígitos Unicode, sin el guion bajo. La regla anterior, \b[a-z0-9]+\b, descartaba
+# sin aviso palabras enteras: "español" (la ñ impide la frontera \b) y "_cursiva_" (el guion
+# bajo cuenta como carácter de palabra). results/stage1/consistency.json lo comprueba.
+_TOKEN = re.compile(r"[^\W_]+")
 
 
 def read_ids(control_file: Path) -> set:
