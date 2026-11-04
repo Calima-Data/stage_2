@@ -1,28 +1,16 @@
 import json
-import re
-from pathlib import Path
 
-# Rutas principales
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATALAKE_DIR = BASE_DIR / "datalake" / "book_based" / "books"
-DATAMARTS_DIR = BASE_DIR / "datamarts"
-CONTROL_DIR = BASE_DIR / "control"
+from pipeline_common import (
+    INDEX_JSON_PATH,
+    INDEXED_JSON_FILE,
+    append_id,
+    atomic_write_text,
+    crash_point,
+    read_ids,
+    ready_books,
+    tokenize,
+)
 
-INDEX_JSON_PATH = DATAMARTS_DIR / "inverted_index.json"
-INDEXED_FILE = CONTROL_DIR / "indexed_books.txt"
-
-def get_indexed_books() -> set:
-    """Lee el control de libros ya indexados."""
-    if not INDEXED_FILE.exists():
-        return set()
-    with open(INDEXED_FILE, "r") as f:
-        return set(int(line.strip()) for line in f if line.strip().isdigit())
-
-def mark_as_indexed(book_id: int):
-    """Registra el libro como indexado."""
-    CONTROL_DIR.mkdir(parents=True, exist_ok=True)
-    with open(INDEXED_FILE, "a") as f:
-        f.write(f"{book_id}\n")
 
 def load_index() -> dict:
     """Carga el índice existente o crea uno vacío."""
@@ -31,57 +19,45 @@ def load_index() -> dict:
             return json.load(f)
     return {}
 
+
 def save_index(index: dict):
-    """Guarda el índice en disco."""
-    DATAMARTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_JSON_PATH, "w", encoding="utf-8") as f:
-        # indent=2 formatea el JSON para que sea legible por humanos
-        json.dump(index, f, ensure_ascii=False, indent=2)
+    """Guarda el índice en disco de forma atómica."""
+    # indent=2 formatea el JSON para que sea legible por humanos
+    atomic_write_text(INDEX_JSON_PATH, json.dumps(index, ensure_ascii=False, indent=2))
+
+
+def add_book(index: dict, book_id: int, terms: set):
+    for word in terms:
+        postings = index.setdefault(word, [])
+        if book_id not in postings:
+            postings.append(book_id)
+            postings.sort()  # Mantenemos la lista ordenada
+
 
 def process_index():
-    if not DATALAKE_DIR.exists():
-        print("Error: No se encontró el Datalake.")
+    pendientes = ready_books(read_ids(INDEXED_JSON_FILE))
+    if not pendientes:
+        print("\nNo hay libros nuevos para indexar.")
         return
 
-    indexed_books = get_indexed_books()
     inverted_index = load_index()
-    procesados = 0
-
     print("Iniciando construcción del índice invertido (JSON)...")
+    for book_id, body_file in pendientes:
+        print(f"  -> Indexando libro {book_id}...")
+        add_book(inverted_index, book_id, tokenize(body_file.read_text(encoding="utf-8")))
 
-    for book_dir in DATALAKE_DIR.iterdir():
-        if book_dir.is_dir():
-            book_id = int(book_dir.name)
-            
-            if book_id in indexed_books:
-                print(f"Saltando libro {book_id}: Ya indexado.")
-                continue
-            
-            body_file = book_dir / "body.txt"
-            if body_file.exists():
-                print(f"  -> Indexando libro {book_id}...")
-                text = body_file.read_text(encoding="utf-8")
-                
-                # Expresión regular: extrae solo palabras alfanuméricas en minúsculas
-                words = re.findall(r'\b[a-z0-9]+\b', text.lower())
-                unique_words = set(words) # Usamos set para no contar palabras repetidas del mismo libro
-                
-                for word in unique_words:
-                    if word not in inverted_index:
-                        inverted_index[word] = []
-                    if book_id not in inverted_index[word]:
-                        inverted_index[word].append(book_id)
-                        inverted_index[word].sort() # Mantenemos la lista ordenada
-                
-                mark_as_indexed(book_id)
-                procesados += 1
+    # Orden importante: primero se persiste el índice y después se marca cada libro. Si el
+    # proceso cae entre ambos pasos, el libro se reindexa sin duplicar sus postings; al
+    # revés, quedaría marcado como indexado sin estar en el índice.
+    crash_point("index_before_persist")
+    save_index(inverted_index)
+    crash_point("index_before_mark")
+    for book_id, _ in pendientes:
+        append_id(INDEXED_JSON_FILE, book_id)
 
-    if procesados > 0:
-        save_index(inverted_index)
-        print(f"\n¡Proceso completado! Se añadieron {procesados} libros al índice.")
-        print(f"Archivo guardado en {INDEX_JSON_PATH}")
-    else:
-        print("\nNo hay libros nuevos para indexar.")
+    print(f"\n¡Proceso completado! Se añadieron {len(pendientes)} libros al índice.")
+    print(f"Archivo guardado en {INDEX_JSON_PATH}")
+
 
 if __name__ == "__main__":
     process_index()
