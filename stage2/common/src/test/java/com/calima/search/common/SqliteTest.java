@@ -17,6 +17,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class SqliteTest {
 
+    private static final long WAL_CEILING_BYTES = 96L * 1024 * 1024;
+
     @TempDir
     Path dir;
 
@@ -129,6 +131,97 @@ class SqliteTest {
             executor.shutdown();
             assertEquals(threads * writesPerThread, count(db));
             assertTrue(worstNanos < 500_000_000L, "worst write took " + worstNanos / 1_000_000 + " ms");
+        }
+    }
+
+    /** Writes {@code rows} rows of 500 bytes per transaction and returns the largest log seen after a commit. */
+    private long writeLoadAndPeakWal(Sqlite writer, Path wal, int transactions, int rows) throws SQLException, java.io.IOException {
+        long peak = 0;
+        for (int i = 0; i < transactions; i++) {
+            writer.write(c -> {
+                Sqlite.execute(c, "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n WHERE x < " + rows + ") "
+                        + "INSERT INTO load SELECT randomblob(500) FROM n");
+                return null;
+            });
+            peak = Math.max(peak, java.nio.file.Files.size(wal));
+        }
+        return peak;
+    }
+
+    private Sqlite writerWithLoadTable(Path file) throws SQLException {
+        Sqlite writer = Sqlite.writer(file, 2, 30_000, "NORMAL");
+        writer.write(c -> {
+            Sqlite.execute(c, "CREATE TABLE IF NOT EXISTS load (payload BLOB)");
+            return null;
+        });
+        return writer;
+    }
+
+    /**
+     * Two replicas alternating as writers leave no moment in which the log can restart: one begins
+     * while the other checkpoints. The integration benchmark saw 1.9 GB of log for a 61 MB index.
+     */
+    @Test
+    void writeAheadLogStaysBoundedWhenReplicasCompeteToWrite() throws Exception {
+        Path file = dir.resolve("replicas.db");
+        Path wal = dir.resolve("replicas.db-wal");
+        int transactions = 15;
+        try (Sqlite first = writerWithLoadTable(file); Sqlite second = writerWithLoadTable(file)) {
+            ExecutorService executor = Executors.newFixedThreadPool(4);
+            java.util.List<Future<Long>> writers = new java.util.ArrayList<>();
+            for (Sqlite replica : java.util.List.of(first, second, first, second)) {
+                writers.add(executor.submit(() -> writeLoadAndPeakWal(replica, wal, transactions, 16_000)));
+            }
+            long peak = 0;
+            for (Future<Long> writer : writers) {
+                peak = Math.max(peak, writer.get());
+            }
+            executor.shutdown();
+            assertTrue(peak < WAL_CEILING_BYTES, "the log reached " + peak / (1024 * 1024) + " MB");
+        }
+    }
+
+    /** Constant reads have the same effect on the log, because a reader pins the frames it can see. */
+    @Test
+    void writeAheadLogStaysBoundedUnderConstantReads() throws Exception {
+        Path file = dir.resolve("reads.db");
+        Path wal = dir.resolve("reads.db-wal");
+        try (Sqlite writer = writerWithLoadTable(file); Sqlite reader = Sqlite.reader(file, 4, 30_000)) {
+            java.util.concurrent.atomic.AtomicBoolean running = new java.util.concurrent.atomic.AtomicBoolean(true);
+            ExecutorService executor = Executors.newFixedThreadPool(4);
+            java.util.List<Future<Integer>> readers = new java.util.ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                readers.add(executor.submit(() -> {
+                    int reads = 0;
+                    while (running.get()) {
+                        // Held for a while: four such readers overlap, so one is always active.
+                        reader.read(c -> {
+                            try (PreparedStatement ps = c.prepareStatement("SELECT rowid FROM load LIMIT 50"); ResultSet rs = ps.executeQuery()) {
+                                rs.next();
+                            }
+                            try {
+                                Thread.sleep(8);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                            return null;
+                        });
+                        reads++;
+                    }
+                    return reads;
+                }));
+            }
+            long peak;
+            try {
+                peak = writeLoadAndPeakWal(writer, wal, 360, 2_000);
+            } finally {
+                running.set(false);
+            }
+            for (Future<Integer> read : readers) {
+                assertTrue(read.get() > 0);
+            }
+            executor.shutdown();
+            assertTrue(peak < WAL_CEILING_BYTES, "the log reached " + peak / (1024 * 1024) + " MB");
         }
     }
 

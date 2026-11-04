@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -11,6 +12,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteErrorCode;
 import org.sqlite.SQLiteException;
@@ -30,6 +33,10 @@ public final class Sqlite implements AutoCloseable {
     public interface Work<T> {
         T run(Connection connection) throws SQLException;
     }
+
+    private static final Logger LOG = LoggerFactory.getLogger(Sqlite.class);
+    private static final long WAL_LIMIT_BYTES = 64L * 1024 * 1024;
+    private static final long CHECKPOINT_RETRY_MS = 5;
 
     private final Path file;
     private final boolean readOnly;
@@ -98,9 +105,44 @@ public final class Sqlite implements AutoCloseable {
             throw new ApiException(503, "database_busy", "Interrupted while waiting for the database", 1);
         }
         try {
+            emptyLogIfLarge();
             return transaction("BEGIN IMMEDIATE", work);
         } finally {
             processWriteLock.unlock();
+        }
+    }
+
+    /**
+     * Empties a write-ahead log that has outgrown {@link #WAL_LIMIT_BYTES}.
+     *
+     * <p>SQLite's automatic checkpoint copies pages to the database but only restarts the log when no
+     * connection is using it. Constant reads, or replicas taking turns to write, leave no such moment:
+     * the log then grows with everything ever written, and benchmarks saw 1.9 GB for a 61 MB index. A
+     * {@code TRUNCATE} checkpoint waits for that moment instead.
+     *
+     * <p>Writers wait here until the log is small. A second checkpoint gets {@code SQLITE_BUSY} at once,
+     * without waiting, so a replica that simply carried on writing would starve the checkpoint already
+     * running. After the busy timeout the write goes ahead anyway: a large log is better than no write.
+     */
+    private void emptyLogIfLarge() {
+        Path log = file.resolveSibling(file.getFileName() + "-wal");
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(busyTimeoutMs);
+        try {
+            while (Files.exists(log) && Files.size(log) >= WAL_LIMIT_BYTES && System.nanoTime() < deadline) {
+                withConnection(connection -> {
+                    try (Statement statement = connection.createStatement();
+                         ResultSet result = statement.executeQuery("PRAGMA wal_checkpoint(TRUNCATE)")) {
+                        return result.next();
+                    }
+                });
+                if (Files.size(log) >= WAL_LIMIT_BYTES) {
+                    Thread.sleep(CHECKPOINT_RETRY_MS);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (java.io.IOException | SQLException | ApiException e) {
+            LOG.warn("Could not empty the write-ahead log of {}: {}", file, e.toString());
         }
     }
 
