@@ -46,8 +46,15 @@ def mean_sd(rows, key):
 
 
 def fmt(rows, key, digits=1):
+    if all(row.get(key) in (None, "") for row in rows):
+        return "n/a"
     mean, sd = mean_sd(rows, key)
     return f"{mean:.{digits}f} ± {sd:.{digits}f}"
+
+
+def each_run(rows, key, digits=2):
+    """The separate values: one slow run moves a mean of three, and these show whether that happened."""
+    return ", ".join(f"{number(row, key):.{digits}f}" for row in rows)
 
 
 def table(headers, rows):
@@ -69,11 +76,11 @@ def pipeline_tables(rows):
         failed = sum(int(number(r, "failed")) for r in group_rows)
         checksums = {r["index_checksum"] for r in group_rows}
         body.append([experiment, workers, ingestion, indexing, sync, latency, len(group_rows), fmt(group_rows, "throughput_books_per_s", 2),
-                     fmt(group_rows, "avg_ingest_ms"), fmt(group_rows, "avg_index_ms"), fmt(group_rows, "avg_publish_check_ms"),
+                     each_run(group_rows, "throughput_books_per_s"), fmt(group_rows, "avg_ingest_ms"), fmt(group_rows, "avg_index_ms"), fmt(group_rows, "avg_publish_check_ms"),
                      fmt(group_rows, "avg_coordination_ms"), fmt(group_rows, "avg_queue_wait_ms", 0),
                      fmt(group_rows, "wal_peak_mb", 0), fmt(group_rows, "index_size_MB", 0), failed, len(checksums)])
     out.append(table(["Experiment", "Control workers", "Ingestion replicas", "Indexing replicas", "synchronous", "Upstream delay (ms)", "Runs",
-                      "Books/s", "Ingest call (ms)", "Index call (ms)", "Visibility check (ms)", "Coordination (ms/book)", "Queue wait (ms)",
+                      "Books/s", "Books/s of each run", "Ingest call (ms)", "Index call (ms)", "Visibility check (ms)", "Coordination (ms/book)", "Queue wait (ms)",
                       "Peak WAL (MB)", "Index + WAL at the end (MB)", "Failed", "Distinct index checksums"], body))
     resources = []
     for key, group_rows in group(rows, keys).items():
@@ -164,13 +171,32 @@ def plot_growth(samples):
     x = [(a + b) / 2 for a, b, *_ in rows]
     y = [row[2] for row in rows]
     axis.plot(x, y, marker="o", color=chart_style.SERIES[0])
-    for px, py in zip(x, y):
-        axis.annotate(f"{py:.1f}", (px, py), xytext=(0, 7), textcoords="offset points", ha="center", fontsize=8, color=chart_style.TEXT_SECONDARY)
+    for i, (px, py) in enumerate(zip(x, y)):
+        # Below a local minimum, because a label above it would sit on the line.
+        dip = 0 < i < len(y) - 1 and py < y[i - 1] and py < y[i + 1]
+        axis.annotate(f"{py:.1f}", (px, py), xytext=(0, -14 if dip else 7), textcoords="offset points", ha="center", fontsize=8, color=chart_style.TEXT_SECONDARY)
     axis.set_ylim(bottom=0)
     axis.set_xlabel("Books already in the index")
     axis.set_ylabel("Books published per second")
     axis.set_title("Publishing slows down as the index grows")
     chart_style.save(figure, CHARTS / "pipeline_index_growth.png")
+
+
+def plot_stalls(rows):
+    """Publishing next to probes that share only the machine with it. Separate panels, as the scales differ."""
+    chart_style.apply()
+    rows = [r for r in rows if number(r, "to_s") - number(r, "from_s") >= 5]  # a shorter last window is noise
+    x = [number(r, "to_s") for r in rows]
+    panels = [("books_per_s", "Books/s published", 0), ("fsync_median_ms", "Probe: fsync, median (ms)", 1),
+              ("cpu_work_median_ms", "Probe: CPU work (ms)", 2), ("disk_write_mb_s", "Disk writes (MB/s)", 3)]
+    figure, axes = plt.subplots(len(panels), 1, figsize=(7.5, 6.6), sharex=True)
+    for axis, (key, label, color) in zip(axes, panels):
+        axis.plot(x, [number(r, key) for r in rows], marker=chart_style.MARKERS[color], color=chart_style.SERIES[color])
+        axis.set_ylim(bottom=0)
+        axis.set_ylabel(label, fontsize=8)
+    axes[0].set_title("Publishing next to independent probes of the disk and the CPU")
+    axes[-1].set_xlabel("Seconds since the probes started (one point every 10 s or so)")
+    chart_style.save(figure, CHARTS / "pipeline_stall_probe.png")
 
 
 # --- search --------------------------------------------------------------------------------------
@@ -198,9 +224,9 @@ def search_tables(rows, mixed):
         for (mode,), group_rows in group(mixed, ["mode"]).items():
             rows_mixed.append([mode, len(group_rows), fmt(group_rows, "throughput_rps", 0), fmt(group_rows, "latency_p50_ms", 2),
                                fmt(group_rows, "latency_p95_ms", 2), fmt(group_rows, "latency_p99_ms", 2), fmt(group_rows, "books_per_s", 2),
-                               fmt(group_rows, "wal_peak_mb", 0), fmt(group_rows, "host_cpu_percent_mean"),
+                               each_run(group_rows, "books_per_s"), fmt(group_rows, "wal_peak_mb", 0), fmt(group_rows, "host_cpu_percent_mean"),
                                sum(int(number(r, "errors")) for r in group_rows), sum(int(number(r, "failed")) for r in group_rows)])
-        out.append(table(["Mode", "Runs", "Requests/s", "p50 ms", "p95 ms", "p99 ms", "Books/s published", "Peak WAL (MB)", "Host CPU %",
+        out.append(table(["Mode", "Runs", "Requests/s", "p50 ms", "p95 ms", "p99 ms", "Books/s published", "Books/s of each run", "Peak WAL (MB)", "Host CPU %",
                           "Search errors", "Books failed"], rows_mixed))
     return out
 
@@ -366,6 +392,9 @@ def main():
         samples = read_csv(growth_path)
         tables += growth_table(samples)
         plot_growth(samples)
+    stalls_path = RESULTS / "evidence" / "stalls" / "windows.csv"
+    if stalls_path.exists():
+        plot_stalls(read_csv(stalls_path))
     plot_timeseries(INTEGRATION / "timeseries_pipeline_workers8.csv",
                     [("ingestion-0", "Ingestion"), ("indexing-0", "Indexing"), ("control", "Control"), ("search-0", "Search")],
                     "Resources over time: pipeline, 8 Control workers", CHARTS / "timeseries_pipeline.png")

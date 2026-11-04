@@ -1,0 +1,7 @@
+index: 500 books, 81 MB, pages of 4096 bytes; one book of 16392 postings; 6 repeats
+default cache  shuffled  median    919 ms per book; each: [881, 875, 958, 918, 920, 929]; log after each, MB: [53, 53, 53, 53, 53, 53]
+default cache  sorted    median    748 ms per book; each: [621, 748, 748, 760, 798, 725]; log after each, MB: [53, 53, 53, 53, 54, 54]
+64 MB cache    shuffled  median    612 ms per book; each: [623, 584, 593, 670, 658, 600]; log after each, MB: [53, 53, 53, 53, 53, 53]
+64 MB cache    sorted    median   4114 ms per book; each: [621, 7607, 9180, 8951, 593, 570]; log after each, MB: [53, 53, 53, 53, 54, 54]
+256 MB cache   shuffled  median    604 ms per book; each: [679, 605, 587, 602, 606, 577]; log after each, MB: [53, 53, 53, 53, 53, 53]
+256 MB cache   sorted    median    577 ms per book; each: [570, 605, 573, 580, 574, 583]; log after each, MB: [53, 53, 53, 53, 54, 54]
