@@ -36,6 +36,7 @@ CORPUS_IDS_FILE = STAGE2 / "fixtures" / "benchmark_corpus_ids.txt"
 FIRST_BOOK_ID = 100001
 PIPELINE_BOOKS = 200
 SEARCH_INDEX_BOOKS = 500
+GROWTH_BOOKS = 1000
 SAMPLE_SECONDS = 0.5
 WARMUP_S = 5
 MEASURE_S = 15
@@ -72,9 +73,10 @@ def fetch_corpus(root):
 class ResourceSampler:
     """Samples CPU and memory per process and for the host while an experiment runs."""
 
-    def __init__(self, deployment, client_processes=()):
+    def __init__(self, deployment, wal_file=None):
         self.deployment = deployment
-        self.client_processes = client_processes
+        self.wal_file = wal_file
+        self.wal_peak_bytes = 0
         self.samples = []
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -103,6 +105,11 @@ class ResourceSampler:
                     sample[f"{name}.rss_mb"] = process.memory_info().rss / 1048576
                 except psutil.Error:
                     pass
+            if self.wal_file:
+                try:
+                    self.wal_peak_bytes = max(self.wal_peak_bytes, self.wal_file.stat().st_size)
+                except OSError:
+                    pass  # the log does not exist until the first write
             self.samples.append(sample)
 
     def __enter__(self):
@@ -129,6 +136,8 @@ class ResourceSampler:
             rss = [sum(s.get(f"{n}.rss_mb", 0) for n in members) for s in self.samples]
             result[f"{role}_cpu_percent_mean"] = round(statistics.mean(cpu), 1)
             result[f"{role}_rss_mb_max"] = round(max(rss), 1)
+        if self.wal_file:
+            result["wal_peak_mb"] = round(self.wal_peak_bytes / 1048576, 1)
         return result
 
     def write_timeseries(self, path):
@@ -200,7 +209,7 @@ def run_pipeline_once(root, corpus, experiment, config, repeat, books, write_ser
     with Deployment(topology) as deployment:
         deployment.start_mock(corpus, max_book_id=FIRST_BOOK_ID + books, latency_ms=latency)
         deployment.up()
-        with ResourceSampler(deployment) as sampler:
+        with ResourceSampler(deployment, data_dir / "datamart" / "search.db-wal") as sampler:
             started = time.time()
             requests.post(f"{topology.control_url}/control/books", timeout=30,
                           json={"from": FIRST_BOOK_ID, "to": FIRST_BOOK_ID + books - 1}).raise_for_status()
@@ -272,6 +281,35 @@ def cmd_real_gutenberg(args, root, corpus):
     print(json.dumps({k: report[k] for k in ("states", "elapsed_s", "books_per_s", "queries")}, indent=1, ensure_ascii=False)[:1500], flush=True)
 
 
+def cmd_growth(args, root, corpus):
+    """Publication rate as the index grows, from one long run: each sample is one point of a curve."""
+    books = args.growth_books
+    data_dir = fresh_dir(root, "growth_run")
+    wal_file = data_dir / "datamart" / "search.db-wal"
+    topology = Topology(data_dir=data_dir, heap="1g", control_workers=8)
+    samples = []
+    with Deployment(topology) as deployment:
+        deployment.start_mock(corpus, max_book_id=FIRST_BOOK_ID + books)
+        deployment.up()
+        started = time.time()
+        requests.post(f"{topology.control_url}/control/books", timeout=30,
+                      json={"from": FIRST_BOOK_ID, "to": FIRST_BOOK_ID + books - 1}).raise_for_status()
+        while True:
+            states = requests.get(f"{topology.control_url}/control/status", timeout=30).json()["states"]
+            size = requests.get(f"{topology.urls('indexing')[0]}/index/status", timeout=30).json()["index_size_MB"]
+            samples.append({"t_s": round(time.time() - started, 2), "books_published": states["PUBLISHED"], "failed": states["FAILED"],
+                            "wal_mb": round(wal_file.stat().st_size / 1048576, 1) if wal_file.exists() else 0, "index_plus_wal_mb": size})
+            if states["PUBLISHED"] + states["FAILED"] >= books:
+                break
+            time.sleep(2)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    with open(RESULTS / "index_growth.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(samples[0]))
+        writer.writeheader()
+        writer.writerows(samples)
+    print(f"   {books} books in {samples[-1]['t_s']} s, failed {samples[-1]['failed']}, peak WAL {max(s['wal_mb'] for s in samples)} MB", flush=True)
+
+
 # --- search under load -------------------------------------------------------------------------
 
 SEARCH_CONFIGS = (
@@ -279,6 +317,8 @@ SEARCH_CONFIGS = (
     + [("search_threads", dict(clients=32, http_threads=t, search_pool=t, search_cache=0)) for t in (1, 2, 4, 8, 16, 32)]
     + [("search_replicas", dict(clients=32, search=r, search_cache=0)) for r in (1, 2, 4)]
     + [("cache", dict(clients=c, search_cache=1000)) for c in (1, 8, 32)]
+    # Tells whether one client is slow per request because 5 s at its low rate do not warm the JVM.
+    + [("client_warmup_30s", dict(clients=1, search_cache=0, warmup=30))]
 )
 
 
@@ -317,12 +357,12 @@ def expected_answers(topology, out_file):
     return lines
 
 
-def load(topology, query_file, clients, out_json, deployment, warmup=WARMUP_S, measure=MEASURE_S, sampler_series=None):
+def load(topology, query_file, clients, out_json, deployment, warmup=WARMUP_S, measure=MEASURE_S, sampler_series=None, wal_file=None):
     urls = ",".join(topology.urls("search"))
     command = ["java", "-Xmx1g", "-jar", str(JARS["tools"]), urls, str(query_file), str(clients), str(warmup), str(measure), str(out_json)]
     client = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     deployment.processes["load-tester"] = {"process": client, "port": 0}
-    with ResourceSampler(deployment) as sampler:
+    with ResourceSampler(deployment, wal_file) as sampler:
         code = client.wait()
     deployment.processes.pop("load-tester")
     if code != 0:
@@ -341,6 +381,7 @@ def cmd_search(args, root, corpus):
     for experiment, config in SEARCH_CONFIGS:
         settings = dict(config)
         clients = settings.pop("clients")
+        warmup = settings.pop("warmup", WARMUP_S)
         for repeat in range(args.repeats):
             topology = Topology(data_dir=index_dir, heap="1g", **settings)
             with Deployment(topology) as deployment:
@@ -351,8 +392,8 @@ def cmd_search(args, root, corpus):
                 out = work / "load.json"
                 series = RESULTS / f"timeseries_search_clients{clients}.csv" if (experiment == "client_concurrency" and repeat == 0 and clients == 32) else None
                 RESULTS.mkdir(parents=True, exist_ok=True)
-                summary, resources = load(topology, query_file, clients, out, deployment, sampler_series=series)
-            row = {"experiment": experiment, "repeat": repeat, "client_concurrency": clients,
+                summary, resources = load(topology, query_file, clients, out, deployment, warmup=warmup, sampler_series=series)
+            row = {"experiment": experiment, "repeat": repeat, "client_concurrency": clients, "warmup_s": warmup,
                    "search_replicas": settings.get("search", 1),
                    "http_threads": settings.get("http_threads") or "default",
                    "db_connections_per_replica": settings.get("search_pool", 16),
@@ -366,15 +407,17 @@ def cmd_search(args, root, corpus):
 
 
 def cmd_mixed(args, root, corpus):
-    """Search latency with and without a concurrent pipeline writing to the same datamart."""
-    extra_books = 100
-    for mode in ("idle_index", "while_indexing"):
+    """Reads and writes on the same datamart: each side alone, then both together."""
+    extra_books = 400
+    warmup, measure = 2, 30
+    for mode in ("reads_only", "writes_only", "reads_and_writes"):
         for repeat in range(args.repeats):
             source = build_search_index(root, corpus, args.search_books)
             data_dir = fresh_dir(root, "mixed_run")
             shutil.copytree(source / "datamart", data_dir / "datamart")
             shutil.copytree(source / "datalake", data_dir / "datalake")
             shutil.copytree(source / "state", data_dir / "state")
+            wal_file = data_dir / "datamart" / "search.db-wal"
             topology = Topology(data_dir=data_dir, heap="1g", control_workers=4, search_cache=0)
             with Deployment(topology) as deployment:
                 deployment.start_mock(corpus, max_book_id=FIRST_BOOK_ID + args.search_books + extra_books)
@@ -382,18 +425,30 @@ def cmd_mixed(args, root, corpus):
                 query_file = data_dir / "queries.tsv"
                 # While the index changes the totals change too, so they are not asserted here.
                 query_file.write_text("\n".join(QUERY_TEMPLATES) + "\n", encoding="utf-8")
-                if mode == "while_indexing":
+                states_before = requests.get(f"{topology.control_url}/control/status", timeout=30).json()["states"]
+                started = time.time()
+                if mode != "reads_only":
                     first = FIRST_BOOK_ID + args.search_books
                     requests.post(f"{topology.control_url}/control/books", timeout=30,
                                   json={"from": first, "to": first + extra_books - 1}).raise_for_status()
-                summary, resources = load(topology, query_file, 8, data_dir / "load.json", deployment, warmup=2, measure=15)
+                if mode == "writes_only":
+                    summary = {}
+                    with ResourceSampler(deployment, wal_file) as sampler:
+                        time.sleep(warmup + measure)
+                    resources = sampler.summary()
+                else:
+                    summary, resources = load(topology, query_file, 8, data_dir / "load.json", deployment, warmup=warmup,
+                                              measure=measure, wal_file=wal_file)
+                window = time.time() - started
                 states = requests.get(f"{topology.control_url}/control/status", timeout=30).json()["states"]
-            append_row("mixed.csv", {"mode": mode, "repeat": repeat, "client_concurrency": 8, "control_workers": 4,
-                                     "books_published_during_or_before": states["PUBLISHED"], "failed": states["FAILED"],
+            published = states["PUBLISHED"] - states_before["PUBLISHED"]
+            append_row("mixed.csv", {"mode": mode, "repeat": repeat, "client_concurrency": 8 if summary else 0, "control_workers": 4,
+                                     "books_before": states_before["PUBLISHED"], "books_published_in_window": published,
+                                     "window_s": round(window, 2), "books_per_s": round(published / window, 3), "failed": states["FAILED"],
                                      **{k: (round(v, 3) if isinstance(v, float) else v) for k, v in summary.items() if k != "client_concurrency"},
                                      **resources})
-            print(f"   {mode} #{repeat}: {summary['throughput_rps']:.0f} rps, p95 {summary['latency_p95_ms']:.2f} ms, "
-                  f"errors {summary['errors']}, published {states['PUBLISHED']}", flush=True)
+            print(f"   {mode} #{repeat}: {summary.get('throughput_rps', 0):.0f} rps, p95 {summary.get('latency_p95_ms', 0):.2f} ms, "
+                  f"errors {summary.get('errors', 0)}, published {published} in {window:.0f} s, wal peak {resources.get('wal_peak_mb')} MB, failed {states['FAILED']}", flush=True)
 
 
 def write_host_info():
@@ -414,7 +469,7 @@ def write_host_info():
     (RESULTS / "host.json").write_text(json.dumps(info, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-COMMANDS = {"real-gutenberg": cmd_real_gutenberg, "pipeline": cmd_pipeline, "search": cmd_search, "mixed": cmd_mixed}
+COMMANDS = {"real-gutenberg": cmd_real_gutenberg, "pipeline": cmd_pipeline, "search": cmd_search, "mixed": cmd_mixed, "growth": cmd_growth}
 
 
 def main():
@@ -424,6 +479,7 @@ def main():
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--pipeline-books", type=int, default=PIPELINE_BOOKS)
     parser.add_argument("--search-books", type=int, default=SEARCH_INDEX_BOOKS)
+    parser.add_argument("--growth-books", type=int, default=GROWTH_BOOKS)
     args = parser.parse_args()
     root = args.data_dir.resolve()
     if "onedrive" in str(root).lower():
