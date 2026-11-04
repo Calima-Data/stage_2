@@ -46,6 +46,22 @@ a snapshot during a write, and `BEGIN IMMEDIATE` is a write lock that works acro
 is one writer at a time on one host, which the benchmarks quantify. SQLite must not sit on a network
 file system, so this has to change for Stage 3.
 
+**D8b. The write-ahead log is bounded at 64 MB by the writers.** SQLite restarts the log only when no
+connection is using it. Constant reads, or replicas taking turns to write, never leave that moment, and
+the first benchmarks saw 1.3 to 1.9 GB of log and index for a 61 MB index. Writers now run a `TRUNCATE`
+checkpoint before writing once the log passes the limit, and wait for one already running. The alternative,
+a background thread, would still need the writers to stop for it. A book can write 53 MB by itself and
+replicas overlap, so the log can pass 64 MB: the highest peak in the final campaign is 119 MB. A checkpoint that cannot
+finish within the busy timeout does not stop the write.
+
+**D8c. Postings stay clustered by term, and are inserted in that order.** Clustering by term makes search
+read one contiguous range per term, but one book then touches about one leaf page per distinct term, so
+publishing gets slower as the index grows. This trade favours reads, as a search engine should. Sorting
+each book before inserting costs no memory and visits each leaf once, which saved 19% on a 500-book index.
+A larger SQLite page cache would save about 23% more (748 against about 577 ms per book), but it would be per
+connection, so it is left out and noted for Stage 3, where the write path has to change anyway.
+Evidence: `results/stage2/evidence/publish_diagnosis.txt`.
+
 **D9. Term frequency in the postings.** Stage 1 stored `(term, book_id)`. The assignment now asks for
 ranking, which needs frequencies, so postings gained `tf` and books gained `word_count`.
 
@@ -61,7 +77,8 @@ service's database, so these contracts can be replaced by remote calls in Stage 
 
 **D12. Publication year comes from the header's "Original publication" line, or else from a curated
 list; otherwise it is null.** The API must filter by publication year, but Project Gutenberg headers
-rarely state it: none of the 12 books checked do, not even *The Great Gatsby*. The "Release date" field
+rarely state it: none of the 20 real books in the benchmark corpus do, not even *The Great Gatsby*.
+The extractor still reads that line, in case a book has it. The "Release date" field
 is the date of the eBook and would date *Pride and Prejudice* 1998. A wrong year is worse than none,
 so the curated list (`publication_years.csv`) covers well-known books, and the rest have
 `year: null` and never match the filter. The contract states this limitation.

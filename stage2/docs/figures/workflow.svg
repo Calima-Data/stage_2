@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 610" width="960" height="610" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" fill="#0b0b0b">
+  <title>Workflow of one book through the orchestrator</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c8501f"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#52514e"/></marker>
+    <style>
+      .head { fill: #eef3fa; stroke: #2a78d6; stroke-width: 1.4; }
+      .headc { fill: #fdf0e9; stroke: #c8501f; stroke-width: 1.4; }
+      .life { stroke: #a3a29c; stroke-width: 1.2; stroke-dasharray: 3 4; }
+      .call { stroke: #c8501f; stroke-width: 1.7; fill: none; marker-end: url(#a); }
+      .back { stroke: #52514e; stroke-width: 1.3; stroke-dasharray: 5 3; fill: none; marker-end: url(#r); }
+      .state { fill: #fdf0e9; stroke: #c8501f; }
+      .local { fill: #f3f2ee; stroke: #a3a29c; }
+      .t { font-weight: 600; font-size: 13.5px; }
+      .s { font-size: 11.5px; fill: #3a3936; }
+    </style>
+  </defs>
+
+  <rect class="headc" x="30" y="12" width="170" height="36" rx="6"/><text x="115" y="35" text-anchor="middle" class="t">Control Module</text>
+  <rect class="head" x="310" y="12" width="170" height="36" rx="6"/><text x="395" y="35" text-anchor="middle" class="t">Ingestion Service</text>
+  <rect class="head" x="540" y="12" width="170" height="36" rx="6"/><text x="625" y="35" text-anchor="middle" class="t">Indexing Service</text>
+  <rect class="head" x="770" y="12" width="170" height="36" rx="6"/><text x="855" y="35" text-anchor="middle" class="t">Search Service</text>
+  <line class="life" x1="115" y1="48" x2="115" y2="600"/>
+  <line class="life" x1="395" y1="48" x2="395" y2="600"/>
+  <line class="life" x1="625" y1="48" x2="625" y2="600"/>
+  <line class="life" x1="855" y1="48" x2="855" y2="600"/>
+
+  <rect class="state" x="30" y="60" width="170" height="38" rx="4"/>
+  <text x="115" y="76" text-anchor="middle" font-weight="600">claim: unfinished first</text>
+  <text x="115" y="91" text-anchor="middle" class="s">atomic, with a lease; PENDING</text>
+
+  <line class="call" x1="115" y1="120" x2="393" y2="120"/>
+  <text x="125" y="113">POST /ingest/{id}</text>
+  <rect class="local" x="306" y="130" width="178" height="66" rx="4"/>
+  <text x="395" y="146" text-anchor="middle" class="s">ledger claim, download</text>
+  <text x="395" y="161" text-anchor="middle" class="s">header, then body: temp file,</text>
+  <text x="395" y="176" text-anchor="middle" class="s">fsync, atomic rename</text>
+  <text x="395" y="191" text-anchor="middle" class="s" font-weight="600">ledger commit = ready</text>
+  <line class="back" x1="393" y1="210" x2="117" y2="210"/>
+  <text x="125" y="204">200, status: downloaded</text>
+  <rect class="state" x="30" y="220" width="170" height="26" rx="4"/>
+  <text x="115" y="238" text-anchor="middle" font-weight="600">record INGESTED</text>
+
+  <line class="call" x1="115" y1="270" x2="623" y2="270"/>
+  <text x="125" y="263">POST /index/update/{id}</text>
+  <line class="call" x1="625" y1="296" x2="397" y2="296"/>
+  <text x="418" y="290">GET /ingest/status/{id}</text>
+  <line class="back" x1="397" y1="318" x2="623" y2="318"/>
+  <text x="418" y="312">available, path, checksum</text>
+  <rect class="local" x="526" y="328" width="198" height="82" rx="4"/>
+  <text x="625" y="344" text-anchor="middle" class="s">read the files, check the sha256</text>
+  <text x="625" y="359" text-anchor="middle" class="s">metadata, term frequencies</text>
+  <text x="625" y="374" text-anchor="middle" class="s">BEGIN IMMEDIATE: book, postings,</text>
+  <text x="625" y="389" text-anchor="middle" class="s">version + 1 in one transaction</text>
+  <text x="625" y="404" text-anchor="middle" class="s" font-weight="600">COMMIT = publication</text>
+  <line class="back" x1="623" y1="424" x2="117" y2="424"/>
+  <text x="125" y="418">200, index: updated</text>
+  <rect class="state" x="30" y="434" width="170" height="26" rx="4"/>
+  <text x="115" y="452" text-anchor="middle" font-weight="600">record INDEXED</text>
+
+  <line class="call" x1="115" y1="484" x2="853" y2="484"/>
+  <text x="125" y="477">GET /books/{id}: is it visible through the front-end API?</text>
+  <line class="back" x1="853" y1="510" x2="117" y2="510"/>
+  <text x="125" y="504">200</text>
+  <rect class="state" x="30" y="520" width="170" height="26" rx="4"/>
+  <text x="115" y="538" text-anchor="middle" font-weight="600">record PUBLISHED</text>
+
+  <rect x="232" y="530" width="708" height="66" rx="6" fill="#fbfaf7" stroke="#a3a29c"/>
+  <text x="246" y="549" font-weight="600">If a process stops between a step and its record</text>
+  <text x="246" y="567" class="s">The state stays behind, so after a restart or an expired lease the same step runs again. Each step is idempotent: a</text>
+  <text x="246" y="583" class="s">downloaded book answers from the ledger, and the same content is not indexed twice. A failed step retries with backoff, up to FAILED.</text>
+</svg>

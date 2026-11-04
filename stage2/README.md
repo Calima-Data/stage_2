@@ -50,7 +50,7 @@ crash between the two just repeats the step, and each step is idempotent. Unfini
 claimed before new ones.
 
 The reasons behind these choices are in [docs/DECISIONS.md](docs/DECISIONS.md), and the full
-discussion and results are in the [report](docs/REPORT.md).
+discussion and results are in the [report](docs/REPORT.pdf) (source: [docs/REPORT.md](docs/REPORT.md)).
 
 ## Build
 
@@ -190,6 +190,19 @@ configuration under `results/stage2/`, and refuses data folders inside OneDrive.
 python scripts/run_jmh.py                                                # component level, about 20 min
 python scripts/bench_integration.py all --data-dir C:/tmp/bench          # whole system, about 1 hour
 python scripts/plot_results.py                                           # charts and tables from the raw files
+python scripts/build_pdf.py docs/REPORT.md                               # report PDF, using Edge or Chrome
+```
+
+`all` runs five parts, which can also run alone: `real-gutenberg`, `pipeline`, `search`, `mixed` and `growth`.
+Results of `all` are appended to the CSV files, so move old files away before measuring again.
+
+Two more scripts explain results rather than produce them:
+
+```bash
+# Is a slow period the system's or the host's? Runs `growth` next to independent disk and CPU probes.
+python scripts/diagnose_stalls.py --data-dir C:/tmp/bench --out ../results/stage2/evidence/stalls
+# Why does publishing slow down? Log volume and time of one book, by insertion order and page cache.
+python scripts/diagnose_publish.py C:/tmp/bench/growth_run/datamart/search.db C:/tmp/diagnose
 ```
 
 ## Where things are

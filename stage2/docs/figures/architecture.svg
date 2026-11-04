@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 760" width="960" height="760" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#0b0b0b">
+  <title>Deployment of the search engine on one host</title>
+  <defs>
+    <marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2a78d6"/></marker>
+    <marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c8501f"/></marker>
+    <marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#52514e"/></marker>
+    <style>
+      .host { fill: #fbfaf7; stroke: #52514e; stroke-width: 1.5; stroke-dasharray: 7 5; }
+      .service { fill: #eef3fa; stroke: #2a78d6; stroke-width: 1.5; }
+      .control { fill: #fdf0e9; stroke: #c8501f; stroke-width: 1.5; }
+      .replica { fill: #ffffff; stroke: #52514e; }
+      .external { fill: #ffffff; stroke: #52514e; stroke-width: 1.2; }
+      .store { fill: #efeee9; stroke: #52514e; }
+      .title { font-weight: 600; font-size: 14px; }
+      .small { font-size: 11.5px; fill: #3a3936; }
+      .label { font-size: 11.5px; }
+      .front { stroke: #2a78d6; stroke-width: 2.2; fill: none; marker-end: url(#blue); }
+      .internal { stroke: #c8501f; stroke-width: 1.8; stroke-dasharray: 8 4; fill: none; marker-end: url(#orange); }
+      .data { stroke: #52514e; stroke-width: 1.6; fill: none; marker-end: url(#gray); }
+    </style>
+  </defs>
+
+  <!-- Front-end boundary, outside the host -->
+  <rect class="external" x="290" y="12" width="380" height="42" rx="6"/>
+  <text x="480" y="30" text-anchor="middle" class="title">Front-end, or an HTTP client</text>
+  <text x="480" y="46" text-anchor="middle" class="small">not part of this stage; a browser needs CORS_ALLOWED_ORIGINS</text>
+
+  <!-- Host -->
+  <rect class="host" x="16" y="92" width="928" height="592" rx="10"/>
+  <text x="30" y="114" class="title">One Stage 2 host: all processes share CPU, memory and disk</text>
+
+  <!-- Search -->
+  <rect class="service" x="310" y="130" width="340" height="132" rx="8"/>
+  <text x="480" y="150" text-anchor="middle" class="title">Search Service (front-end API)</text>
+  <rect class="replica" x="322" y="160" width="154" height="92" rx="4"/>
+  <text x="399" y="177" text-anchor="middle" font-weight="600">Replica 0, :7003</text>
+  <text x="399" y="195" text-anchor="middle" class="small">HTTP threads</text>
+  <text x="399" y="210" text-anchor="middle" class="small">16 read connections</text>
+  <text x="399" y="225" text-anchor="middle" class="small">result cache by version</text>
+  <text x="399" y="242" text-anchor="middle" class="small">no shared state with others</text>
+  <rect class="replica" x="484" y="160" width="154" height="92" rx="4" stroke-dasharray="4 3"/>
+  <text x="561" y="177" text-anchor="middle" font-weight="600">Replica N, :7013...</text>
+  <text x="561" y="197" text-anchor="middle" class="small">optional, same contents;</text>
+  <text x="561" y="212" text-anchor="middle" class="small">clients choose a replica,</text>
+  <text x="561" y="227" text-anchor="middle" class="small">there is no gateway</text>
+
+  <!-- Control -->
+  <rect class="control" x="32" y="130" width="210" height="214" rx="8"/>
+  <text x="137" y="150" text-anchor="middle" class="title">Control Module</text>
+  <rect class="replica" x="44" y="160" width="186" height="110" rx="4"/>
+  <text x="137" y="177" text-anchor="middle" font-weight="600">One process, :7000</text>
+  <text x="137" y="195" text-anchor="middle" class="small">CONTROL_WORKERS threads,</text>
+  <text x="137" y="210" text-anchor="middle" class="small">each one owns one book at a time</text>
+  <text x="137" y="225" text-anchor="middle" class="small">HTTP threads for /control/*</text>
+  <text x="137" y="240" text-anchor="middle" class="small">retries with backoff</text>
+  <text x="137" y="255" text-anchor="middle" class="small">failover across replicas</text>
+  <ellipse class="store" cx="137" cy="290" rx="62" ry="8"/>
+  <path class="store" d="M75 290v44a62 8 0 0 0 124 0v-44"/>
+  <ellipse class="store" cx="137" cy="290" rx="62" ry="8"/>
+  <text x="137" y="314" text-anchor="middle" class="small" font-weight="600">control.db</text>
+  <text x="137" y="328" text-anchor="middle" class="small">task table, leases</text>
+
+  <!-- Indexing -->
+  <rect class="service" x="310" y="322" width="340" height="116" rx="8"/>
+  <text x="480" y="342" text-anchor="middle" class="title">Indexing Service (internal API)</text>
+  <rect class="replica" x="322" y="352" width="154" height="76" rx="4"/>
+  <text x="399" y="369" text-anchor="middle" font-weight="600">Replica 0, :7002</text>
+  <text x="399" y="387" text-anchor="middle" class="small">HTTP threads parse books;</text>
+  <text x="399" y="402" text-anchor="middle" class="small">a fair lock orders writers</text>
+  <text x="399" y="417" text-anchor="middle" class="small">REBUILD_THREADS</text>
+  <rect class="replica" x="484" y="352" width="154" height="76" rx="4" stroke-dasharray="4 3"/>
+  <text x="561" y="369" text-anchor="middle" font-weight="600">Replica N, :7012...</text>
+  <text x="561" y="389" text-anchor="middle" class="small">a local lock cannot</text>
+  <text x="561" y="404" text-anchor="middle" class="small">reach other processes:</text>
+  <text x="561" y="419" text-anchor="middle" class="small">SQLite's lock orders them</text>
+
+  <!-- Ingestion -->
+  <rect class="service" x="310" y="508" width="340" height="116" rx="8"/>
+  <text x="480" y="528" text-anchor="middle" class="title">Ingestion Service (internal API)</text>
+  <rect class="replica" x="322" y="538" width="154" height="76" rx="4"/>
+  <text x="399" y="555" text-anchor="middle" font-weight="600">Replica 0, :7001</text>
+  <text x="399" y="573" text-anchor="middle" class="small">HTTP threads download</text>
+  <text x="399" y="588" text-anchor="middle" class="small">and write the files</text>
+  <text x="399" y="603" text-anchor="middle" class="small">claim per book in the ledger</text>
+  <rect class="replica" x="484" y="538" width="154" height="76" rx="4" stroke-dasharray="4 3"/>
+  <text x="561" y="555" text-anchor="middle" font-weight="600">Replica N, :7011...</text>
+  <text x="561" y="575" text-anchor="middle" class="small">a concurrent duplicate gets</text>
+  <text x="561" y="590" text-anchor="middle" class="small">409, with a retry hint</text>
+
+  <!-- Shared storage -->
+  <text x="810" y="136" text-anchor="middle" class="title">Shared storage</text>
+  <ellipse class="store" cx="810" cy="300" rx="100" ry="12"/>
+  <path class="store" d="M710 300v66a100 12 0 0 0 200 0v-66"/>
+  <ellipse class="store" cx="810" cy="300" rx="100" ry="12"/>
+  <text x="810" y="332" text-anchor="middle" font-weight="600">datamart: search.db</text>
+  <text x="810" y="350" text-anchor="middle" class="small">SQLite in WAL mode, local disk</text>
+  <text x="810" y="365" text-anchor="middle" class="small">commit = publication</text>
+
+  <ellipse class="store" cx="810" cy="462" rx="100" ry="10"/>
+  <path class="store" d="M710 462v46a100 10 0 0 0 200 0v-46"/>
+  <ellipse class="store" cx="810" cy="462" rx="100" ry="10"/>
+  <text x="810" y="488" text-anchor="middle" font-weight="600">datalake: files</text>
+  <text x="810" y="504" text-anchor="middle" class="small">YYYYMMDD/HH/id.{header,body}.txt</text>
+
+  <ellipse class="store" cx="810" cy="572" rx="100" ry="10"/>
+  <path class="store" d="M710 572v40a100 10 0 0 0 200 0v-40"/>
+  <ellipse class="store" cx="810" cy="572" rx="100" ry="10"/>
+  <text x="810" y="600" text-anchor="middle" font-weight="600">ingestion.db</text>
+  <text x="810" y="615" text-anchor="middle" class="small">ledger: claims, paths, checksums</text>
+
+  <!-- Front-end path -->
+  <path class="front" d="M480 54V128"/>
+  <text x="490" y="78" class="label" fill="#1c5fb0" font-weight="600">GET /search, /search/filters, /books/{id}</text>
+
+  <!-- Internal HTTP -->
+  <path class="internal" d="M242 195H308"/>
+  <text x="247" y="184" class="label" fill="#a8421a">GET /books/{id}</text>
+  <path class="internal" d="M242 370 M200 344V380H308"/>
+  <text x="212" y="372" class="label" fill="#a8421a">POST /index/</text>
+  <text x="212" y="396" class="label" fill="#a8421a">update/{id}</text>
+  <path class="internal" d="M90 344V566H308"/>
+  <text x="100" y="558" class="label" fill="#a8421a">POST /ingest/{id}</text>
+  <path class="internal" d="M399 438V506"/>
+  <text x="408" y="470" class="label" fill="#a8421a">GET /ingest/status/{id}</text>
+
+  <!-- Storage paths -->
+  <path class="data" d="M650 196H800V286"/>
+  <text x="660" y="188" class="label">read-only snapshots</text>
+  <path class="data" d="M650 345H708"/>
+  <text x="652" y="335" class="label">one writer</text>
+  <path class="data" d="M650 412H684V474H708"/>
+  <text x="690" y="432" class="label">reads ready books</text>
+  <path class="data" d="M650 545H668V496H708"/>
+  <path class="data" d="M650 604H708"/>
+
+  <!-- Gutenberg -->
+  <rect class="external" x="330" y="702" width="300" height="42" rx="6"/>
+  <text x="480" y="720" text-anchor="middle" class="title">Project Gutenberg</text>
+  <text x="480" y="736" text-anchor="middle" class="small">or the local stand-in, in tests and benchmarks</text>
+  <path class="data" d="M480 624V700"/>
+  <text x="490" y="664" class="label">HTTPS download</text>
+
+  <!-- Legend -->
+  <g transform="translate(32 610)">
+    <text class="small" font-weight="600">Legend</text>
+    <path class="front" d="M0 16H36"/><text x="44" y="20" class="small">front-end API</text>
+    <path class="internal" d="M0 34H36"/><text x="44" y="38" class="small">internal HTTP call</text>
+    <path class="data" d="M0 52H36"/><text x="44" y="56" class="small">file or database access</text>
+  </g>
+  <text x="32" y="712" class="small">Coloured box: service.</text>
+  <text x="32" y="727" class="small">White box: process replica, dashed if optional.</text>
+  <text x="32" y="742" class="small">Text inside it: its threads and local state.</text>
+</svg>
