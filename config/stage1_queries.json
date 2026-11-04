@@ -1,0 +1,4 @@
+{
+  "description": "Declared query set for correction 4: common, medium, rare, single-book and absent terms. Expected IDs are computed independently from the book bodies at run time and stored in results/stage1/query_answers.json.",
+  "terms": ["the", "whale", "rabbit", "monster", "vampire", "darcy", "gatsby", "pirate", "quijote", "wallpaper", "zzzznotaword"]
+}
