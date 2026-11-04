@@ -103,7 +103,8 @@ def tidy():
             factor = {"ms/op": 1, "us/op": 0.001, "s/op": 1000}[row["Unit"]]
             # JMH usa el locale de la JVM, que aquí escribe la coma como separador decimal.
             score = float(row["Score"].replace(",", "."))
-            error = float(row["Score Error (99.9%)"].replace(",", "."))
+            error_column = next(column for column in row if column.startswith("Score Error"))
+            error = float(row[error_column].replace(",", "."))
             rows.append(("Java", JMH_NAMES[name], score * factor, error * factor, "99.9% CI half-width"))
     for file_name in ("node_datalake.txt", "node_index.txt"):
         for line in (RAW / file_name).read_text(encoding="utf-8").splitlines():
@@ -190,8 +191,10 @@ def plot_scaling():
             points = sorted(series[(experiment, structure)])
             axis.errorbar([p[0] for p in points], [p[1] for p in points], yerr=[p[2] for p in points], marker=chart_style.MARKERS[i],
                           color=chart_style.SERIES[i], label=structure.replace("_", " "), capsize=3)
-            axis.annotate(structure.replace("_", " "), (points[-1][0], points[-1][1]), xytext=(6, 4), textcoords="offset points", fontsize=8,
-                          color=chart_style.TEXT_SECONDARY)
+            # Las series del datalake acaban casi en el mismo punto: solo la leyenda las nombra.
+            if experiment == "add_one_500_term_book":
+                axis.annotate(structure.replace("_", " "), (points[-1][0], points[-1][1]), xytext=(6, 4), textcoords="offset points", fontsize=8,
+                              color=chart_style.TEXT_SECONDARY)
         if experiment == "add_one_500_term_book":
             axis.set_xscale("log")
             axis.set_yscale("log")

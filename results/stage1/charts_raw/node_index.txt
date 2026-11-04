@@ -1,0 +1,4 @@
+Inverted index benchmark (Node.js) - 3 warmup + 8 measured rounds, 5000-word vocabulary, +500-word book
+index_sqlite     min=    7.4059  max=    9.4587  mean=    8.4280  median=    8.4772  stddev=    0.7399  (ms)
+index_json       min=    5.1791  max=    6.6544  mean=    5.6430  median=    5.4042  stddev=    0.4985  (ms)
+index_folders    min=  801.0392  max=  858.0992  mean=  827.6366  median=  829.4686  stddev=   18.9397  (ms)

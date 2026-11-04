@@ -1,0 +1,19 @@
+language,structure,mean_ms,error_ms,error_kind
+Python,time_based,1945.4745600029128,22.45882312109314,stddev
+Python,book_based,2079.7111999985646,33.65537014382687,stddev
+Python,range_based,1921.374440001091,27.6697892848588,stddev
+Python,sqlite_postings,9.706300000289048,0.9400829744161778,stddev
+Python,json_monolithic,28.70897499997227,1.1183551629914923,stddev
+Python,folder_hierarchy,596.224800001437,22.401436941760362,stddev
+Java,book_based,1561.60286,81.921907,99.9% CI half-width
+Java,range_based,1582.26615,114.877983,99.9% CI half-width
+Java,time_based,1577.58008,121.153826,99.9% CI half-width
+Java,folder_hierarchy,442.353244,25.512376,99.9% CI half-width
+Java,json_monolithic,2.484753,0.169034,99.9% CI half-width
+Java,sqlite_postings,8.056405,0.359831,99.9% CI half-width
+Node.js,time_based,2412.4391,47.0516,stddev
+Node.js,book_based,2559.4699,28.5822,stddev
+Node.js,range_based,2382.8437,19.7112,stddev
+Node.js,sqlite_postings,8.428,0.7399,stddev
+Node.js,json_monolithic,5.643,0.4985,stddev
+Node.js,folder_hierarchy,827.6366,18.9397,stddev

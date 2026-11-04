@@ -1,0 +1,27 @@
+{
+  "revision": "b2224d7b489a9cfc33efdf9b5774e73a44b40dd5",
+  "export": "git archive b2224d7b489a9cfc33efdf9b5774e73a44b40dd5",
+  "commands": [
+    {
+      "cwd": "worker_python",
+      "command": "python -m pytest test_benchmark.py test_index_benchmark.py -q -p no:cacheprovider --benchmark-json=<repo>\\results\\stage1\\charts_raw\\python_pytest_benchmark.json"
+    },
+    {
+      "cwd": "worker_java",
+      "command": "mvn -q -B test-compile exec:exec -Dexec.args=-classpath %classpath org.openjdk.jmh.Main -rf csv -rff <export>\\java_jmh.csv"
+    },
+    {
+      "cwd": "worker_node",
+      "command": "node datalakeBenchmark.js"
+    },
+    {
+      "cwd": "worker_node",
+      "command": "node indexBenchmark.js"
+    }
+  ],
+  "parameters": {
+    "write_chart": "ingest 1000 synthetic books into an empty datalake; python 2+5 rounds, node 2+5 rounds, JMH per its annotations",
+    "update_chart": "add one 500-term book (450 existing, 50 new) to a 5000-term index; python 3+8 rounds, node 3+8 rounds, JMH per its annotations"
+  },
+  "host": "see results/stage1/environment.json"
+}

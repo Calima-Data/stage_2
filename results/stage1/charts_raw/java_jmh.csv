@@ -1,0 +1,7 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99,9%)","Unit"
+"org.calima.DatalakeBenchmark.bookBased","avgt",1,5,"1561,602860","81,921907","ms/op"
+"org.calima.DatalakeBenchmark.rangeBased","avgt",1,5,"1582,266150","114,877983","ms/op"
+"org.calima.DatalakeBenchmark.timeBased","avgt",1,5,"1577,580080","121,153826","ms/op"
+"org.calima.IndexBenchmark.folderHierarchy","avgt",1,8,"442,353244","25,512376","ms/op"
+"org.calima.IndexBenchmark.monolithicJson","avgt",1,8,"2,484753","0,169034","ms/op"
+"org.calima.IndexBenchmark.sqlitePostings","avgt",1,8,"8,056405","0,359831","ms/op"

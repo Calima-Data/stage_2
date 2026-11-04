@@ -1,0 +1,4 @@
+Datalake structure benchmark (Node.js) - 2 warmup + 5 measured rounds x 1000 books
+time_based       min= 2342.4290  max= 2475.1581  mean= 2412.4391  median= 2414.9412  stddev=   47.0516  (ms)
+book_based       min= 2524.3773  max= 2593.3631  mean= 2559.4699  median= 2552.3399  stddev=   28.5822  (ms)
+range_based      min= 2354.4434  max= 2404.3388  mean= 2382.8437  median= 2388.3979  stddev=   19.7112  (ms)
