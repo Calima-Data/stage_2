@@ -1,0 +1,6 @@
+# Default books for the Stage 1 pipeline, shared by the Python, Java and Node.js workers.
+# One Project Gutenberg ID per line. IDs passed on the command line take precedence.
+1342 # Pride and Prejudice
+84   # Frankenstein
+11   # Alice's Adventures in Wonderland
+16   # Peter Pan

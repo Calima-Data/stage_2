@@ -13,6 +13,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -130,15 +131,27 @@ public class Datalake {
 
     // ---------- pipeline entry point ----------
 
+    /** IDs from the command line or, when there are none, from the shared config file. */
+    static List<Integer> loadBookIds(String[] args, Path configFile) throws IOException {
+        List<String> values = args.length > 0 ? List.of(args) : Files.readAllLines(configFile);
+        List<Integer> ids = new ArrayList<>();
+        for (String value : values) {
+            String id = value.split("#", 2)[0].trim();
+            if (!id.isEmpty()) {
+                ids.add(Integer.parseInt(id));
+            }
+        }
+        return ids;
+    }
+
     public static void main(String[] args) throws IOException {
         Path baseDir = Paths.get("..").toAbsolutePath().normalize();
         Path datalakeDir = baseDir.resolve("datalake");
         Path controlFile = baseDir.resolve("control").resolve("downloaded_books_java.txt");
 
-        List<Integer> librosPrueba = List.of(1342, 84, 11, 16);
         Set<Integer> descargados = getDownloadedBooks(controlFile);
 
-        for (int libro : librosPrueba) {
+        for (int libro : loadBookIds(args, baseDir.resolve("config").resolve("book_ids.txt"))) {
             if (descargados.contains(libro)) {
                 System.out.println("Saltando libro " + libro + ": Ya se encuentra en el Datalake.");
                 continue;

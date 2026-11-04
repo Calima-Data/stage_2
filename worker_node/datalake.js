@@ -81,11 +81,19 @@ async function saveRangeBased(bookId, header, body, rangeSize = 1000) {
   await writeFile(path.join(outputPath, `${bookId}.body.txt`), body, "utf-8");
 }
 
+// IDs from the command line or, when there are none, from the shared config file.
+async function loadBookIds() {
+  const args = process.argv.slice(2);
+  const values = args.length > 0
+    ? args
+    : (await readFile(path.join(BASE_DIR, "config", "book_ids.txt"), "utf-8")).split("\n");
+  return values.map((v) => v.split("#")[0].trim()).filter(Boolean).map(Number);
+}
+
 async function main() {
-  const librosPrueba = [1342, 84, 11, 16];
   const descargados = await getDownloadedBooks();
 
-  for (const libro of librosPrueba) {
+  for (const libro of await loadBookIds()) {
     if (descargados.has(libro)) {
       console.log(`Saltando libro ${libro}: Ya se encuentra en el Datalake.`);
       continue;
