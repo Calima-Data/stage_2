@@ -18,122 +18,122 @@
     {
       "check": "before ingestion: indexing is refused and search is empty",
       "passed": true,
-      "ms": 317.8
+      "ms": 372.0
     },
     {
       "check": "orchestration: 8 books published; 404 and invalid books FAILED",
       "passed": true,
-      "ms": 598.7
+      "ms": 641.2
     },
     {
       "check": "control: task state, progress summary and errors",
       "passed": true,
-      "ms": 110.0
+      "ms": 112.1
     },
     {
       "check": "control: submission is idempotent and validated",
       "passed": true,
-      "ms": 62.8
+      "ms": 90.7
     },
     {
       "check": "control: a FAILED book can be retried, other states refuse",
       "passed": true,
-      "ms": 92.5
+      "ms": 84.2
     },
     {
       "check": "search: keyword query returns exactly the expected books, by score",
       "passed": true,
-      "ms": 49.4
+      "ms": 44.4
     },
     {
       "check": "search: the book that repeats the term most ranks first",
       "passed": true,
-      "ms": 35.5
+      "ms": 34.3
     },
     {
       "check": "search: each filter works alone",
       "passed": true,
-      "ms": 125.0
+      "ms": 124.8
     },
     {
       "check": "search: filters combine, and a contradiction gives no results",
       "passed": true,
-      "ms": 92.3
+      "ms": 92.9
     },
     {
       "check": "search: year comes from the header or the curated list, never the release date",
       "passed": true,
-      "ms": 58.6
+      "ms": 62.8
     },
     {
       "check": "search: several terms must all match",
       "passed": true,
-      "ms": 63.8
+      "ms": 64.3
     },
     {
       "check": "search: non-ASCII words match with or without diacritics",
       "passed": true,
-      "ms": 95.4
+      "ms": 91.2
     },
     {
       "check": "search: the license footer is not indexed; older THIS markers are parsed",
       "passed": true,
-      "ms": 61.7
+      "ms": 62.8
     },
     {
       "check": "search: no matches is 200 with an empty list",
       "passed": true,
-      "ms": 61.4
+      "ms": 65.2
     },
     {
       "check": "search: pages are disjoint, ordered, and total counts all matches",
       "passed": true,
-      "ms": 125.0
+      "ms": 106.2
     },
     {
       "check": "search: invalid parameters return documented errors",
       "passed": true,
-      "ms": 287.5
+      "ms": 228.0
     },
     {
       "check": "books: metadata extraction, missing fields, and errors",
       "passed": true,
-      "ms": 114.6
+      "ms": 141.8
     },
     {
       "check": "filters: values and counts reflect the published books",
       "passed": true,
-      "ms": 38.3
+      "ms": 25.6
     },
     {
       "check": "errors: an unknown route answers JSON",
       "passed": true,
-      "ms": 27.0
+      "ms": 29.9
     },
     {
       "check": "ingestion: repeat is idempotent; status and list expose only complete books",
       "passed": true,
-      "ms": 117.7
+      "ms": 117.2
     },
     {
       "check": "ingestion: permanent and validation errors",
       "passed": true,
-      "ms": 124.5
+      "ms": 91.0
     },
     {
       "check": "indexing: repeat changes nothing; an unready book is refused",
       "passed": true,
-      "ms": 171.8
+      "ms": 93.2
     },
     {
       "check": "indexing: rebuild publishes a new version with identical answers",
       "passed": true,
-      "ms": 180.4
+      "ms": 178.8
     },
     {
       "check": "operations: every service reports its status and thread configuration",
       "passed": true,
-      "ms": 100.6
+      "ms": 118.7
     },
     {
       "check": "specification: every documented operation was exercised",

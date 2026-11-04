@@ -1,0 +1,177 @@
+{
+  "books_requested": 12,
+  "states": {
+    "PENDING": 0,
+    "INGESTED": 0,
+    "INDEXED": 0,
+    "PUBLISHED": 12,
+    "FAILED": 0
+  },
+  "elapsed_s": 3.72,
+  "books_per_s": 3.225,
+  "control_workers": 2,
+  "avg_ingest_ms": 475.4166666666667,
+  "avg_index_ms": 76.83333333333333,
+  "queries": {
+    "q=whale": {
+      "total": 3,
+      "top": [
+        "Moby Dick; Or, The Whale",
+        "Frankenstein; or, The modern Prometheus"
+      ]
+    },
+    "q=whale&year=1851": {
+      "total": 1,
+      "top": [
+        "Moby Dick; Or, The Whale"
+      ]
+    },
+    "q=rabbit&author=carroll": {
+      "total": 1,
+      "top": [
+        "Alice's Adventures in Wonderland"
+      ]
+    },
+    "q=espana&language=es": {
+      "total": 1,
+      "top": [
+        "Don Quijote"
+      ]
+    },
+    "q=vampire": {
+      "total": 2,
+      "top": [
+        "Dracula",
+        "Frankenstein; or, The modern Prometheus"
+      ]
+    },
+    "q=prejudice&year=1813": {
+      "total": 1,
+      "top": [
+        "Pride and Prejudice"
+      ]
+    }
+  },
+  "books": {
+    "1342": {
+      "book_id": 1342,
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "language": "en",
+      "year": 1813,
+      "word_count": 128700,
+      "unique_terms": 6832,
+      "indexed_at": "2026-11-04T16:00:43.600Z"
+    },
+    "84": {
+      "book_id": 84,
+      "title": "Frankenstein; or, The modern Prometheus",
+      "author": "Mary Wollstonecraft Shelley",
+      "language": "en",
+      "year": 1818,
+      "word_count": 75363,
+      "unique_terms": 7006,
+      "indexed_at": "2026-11-04T16:00:43.158Z"
+    },
+    "11": {
+      "book_id": 11,
+      "title": "Alice's Adventures in Wonderland",
+      "author": "Lewis Carroll",
+      "language": "en",
+      "year": 1865,
+      "word_count": 27429,
+      "unique_terms": 2578,
+      "indexed_at": "2026-11-04T16:00:42.473Z"
+    },
+    "16": {
+      "book_id": 16,
+      "title": "Peter Pan [Peter and Wendy]",
+      "author": "J. M. Barrie",
+      "language": "en",
+      "year": 1911,
+      "word_count": 48051,
+      "unique_terms": 4829,
+      "indexed_at": "2026-11-04T16:00:42.496Z"
+    },
+    "2701": {
+      "book_id": 2701,
+      "title": "Moby Dick; Or, The Whale",
+      "author": "Herman Melville",
+      "language": "en",
+      "year": 1851,
+      "word_count": 219410,
+      "unique_terms": 17144,
+      "indexed_at": "2026-11-04T16:00:44.278Z"
+    },
+    "1661": {
+      "book_id": 1661,
+      "title": "The Adventures of Sherlock Holmes",
+      "author": "Arthur Conan Doyle",
+      "language": "en",
+      "year": 1892,
+      "word_count": 105969,
+      "unique_terms": 7886,
+      "indexed_at": "2026-11-04T16:00:43.732Z"
+    },
+    "2000": {
+      "book_id": 2000,
+      "title": "Don Quijote",
+      "author": "Miguel de Cervantes Saavedra",
+      "language": "es",
+      "year": 1605,
+      "word_count": 383640,
+      "unique_terms": 22477,
+      "indexed_at": "2026-11-04T16:00:44.351Z"
+    },
+    "64317": {
+      "book_id": 64317,
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "language": "en",
+      "year": 1925,
+      "word_count": 50005,
+      "unique_terms": 5839,
+      "indexed_at": "2026-11-04T16:00:44.517Z"
+    },
+    "98": {
+      "book_id": 98,
+      "title": "A Tale of Two Cities",
+      "author": "Charles Dickens",
+      "language": "en",
+      "year": 1859,
+      "word_count": 138439,
+      "unique_terms": 9699,
+      "indexed_at": "2026-11-04T16:00:43.330Z"
+    },
+    "74": {
+      "book_id": 74,
+      "title": "The Adventures of Tom Sawyer, Complete",
+      "author": "Mark Twain",
+      "language": "en",
+      "year": 1876,
+      "word_count": 74392,
+      "unique_terms": 7297,
+      "indexed_at": "2026-11-04T16:00:43.070Z"
+    },
+    "345": {
+      "book_id": 345,
+      "title": "Dracula",
+      "author": "Bram Stoker",
+      "language": "en",
+      "year": 1897,
+      "word_count": 163636,
+      "unique_terms": 9322,
+      "indexed_at": "2026-11-04T16:00:43.482Z"
+    },
+    "1952": {
+      "book_id": 1952,
+      "title": "The Yellow Wallpaper",
+      "author": "Charlotte Perkins Gilman",
+      "language": "en",
+      "year": 1892,
+      "word_count": 6251,
+      "unique_terms": 1223,
+      "indexed_at": "2026-11-04T16:00:43.804Z"
+    }
+  }
+}

@@ -1,0 +1,2 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
+"com.calima.search.indexing.benchmark.TextProcessingBenchmark.tokenizeBook","avgt",8,20,2484.582543,72.332993,"us/op"

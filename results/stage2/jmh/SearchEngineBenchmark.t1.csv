@@ -1,0 +1,4 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit","Param: queryKind"
+"com.calima.search.query.benchmark.SearchEngineBenchmark.search","avgt",1,20,720.959478,8.333018,"us/op",common
+"com.calima.search.query.benchmark.SearchEngineBenchmark.search","avgt",1,20,186.333621,2.476644,"us/op",rare
+"com.calima.search.query.benchmark.SearchEngineBenchmark.search","avgt",1,20,940.655993,18.053264,"us/op",twoTerms

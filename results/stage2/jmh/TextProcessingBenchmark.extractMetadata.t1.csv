@@ -1,0 +1,2 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
+"com.calima.search.indexing.benchmark.TextProcessingBenchmark.extractMetadata","avgt",1,20,10.124924,0.030777,"us/op"

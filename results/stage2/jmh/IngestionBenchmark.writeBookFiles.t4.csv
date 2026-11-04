@@ -1,0 +1,2 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
+"com.calima.search.ingestion.benchmark.IngestionBenchmark.writeBookFiles","avgt",4,20,17810.799528,14054.990779,"us/op"

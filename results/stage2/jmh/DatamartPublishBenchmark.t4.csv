@@ -1,0 +1,3 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit","Param: synchronous"
+"com.calima.search.indexing.benchmark.DatamartPublishBenchmark.publishNewBook","avgt",4,20,406.004809,63.290054,"ms/op",FULL
+"com.calima.search.indexing.benchmark.DatamartPublishBenchmark.publishNewBook","avgt",4,20,409.875562,63.308278,"ms/op",NORMAL

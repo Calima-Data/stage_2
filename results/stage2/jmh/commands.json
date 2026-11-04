@@ -1,0 +1,36 @@
+{
+  "iterations": [
+    "-wi",
+    "5",
+    "-i",
+    "10",
+    "-w",
+    "1s",
+    "-r",
+    "1s",
+    "-f",
+    "2"
+  ],
+  "heap": "-Xmx2G",
+  "commands": [
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar TextProcessingBenchmark.tokenizeBook -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/TextProcessingBenchmark.tokenizeBook.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar TextProcessingBenchmark.tokenizeBook -wi 5 -i 10 -w 1s -r 1s -f 2 -t 2 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/TextProcessingBenchmark.tokenizeBook.t2.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar TextProcessingBenchmark.tokenizeBook -wi 5 -i 10 -w 1s -r 1s -f 2 -t 4 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/TextProcessingBenchmark.tokenizeBook.t4.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar TextProcessingBenchmark.tokenizeBook -wi 5 -i 10 -w 1s -r 1s -f 2 -t 8 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/TextProcessingBenchmark.tokenizeBook.t8.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar TextProcessingBenchmark.tokenizeBook -wi 5 -i 10 -w 1s -r 1s -f 2 -t 16 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/TextProcessingBenchmark.tokenizeBook.t16.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar TextProcessingBenchmark.extractMetadata -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/TextProcessingBenchmark.extractMetadata.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar DatamartPublishBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/DatamartPublishBenchmark.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar DatamartPublishBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 2 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/DatamartPublishBenchmark.t2.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar indexing-service/target/indexing-service-1.0.0-benchmarks.jar DatamartPublishBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 4 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/DatamartPublishBenchmark.t4.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar ingestion-service/target/ingestion-service-1.0.0-benchmarks.jar IngestionBenchmark.splitHeaderAndBody -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/IngestionBenchmark.splitHeaderAndBody.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar ingestion-service/target/ingestion-service-1.0.0-benchmarks.jar IngestionBenchmark.writeBookFiles -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/IngestionBenchmark.writeBookFiles.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar ingestion-service/target/ingestion-service-1.0.0-benchmarks.jar IngestionBenchmark.writeBookFiles -wi 5 -i 10 -w 1s -r 1s -f 2 -t 4 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/IngestionBenchmark.writeBookFiles.t4.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar ingestion-service/target/ingestion-service-1.0.0-benchmarks.jar IngestionBenchmark.claimAndCompleteInLedger -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/IngestionBenchmark.claimAndCompleteInLedger.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar ingestion-service/target/ingestion-service-1.0.0-benchmarks.jar IngestionBenchmark.claimAndCompleteInLedger -wi 5 -i 10 -w 1s -r 1s -f 2 -t 4 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/IngestionBenchmark.claimAndCompleteInLedger.t4.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar search-service/target/search-service-1.0.0-benchmarks.jar SearchEngineBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 1 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/SearchEngineBenchmark.t1.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar search-service/target/search-service-1.0.0-benchmarks.jar SearchEngineBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 2 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/SearchEngineBenchmark.t2.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar search-service/target/search-service-1.0.0-benchmarks.jar SearchEngineBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 4 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/SearchEngineBenchmark.t4.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar search-service/target/search-service-1.0.0-benchmarks.jar SearchEngineBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 8 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/SearchEngineBenchmark.t8.csv",
+    "java -Xmx2G -Duser.language=en -Duser.country=US -jar search-service/target/search-service-1.0.0-benchmarks.jar SearchEngineBenchmark -wi 5 -i 10 -w 1s -r 1s -f 2 -t 16 -jvmArgs \"-Xmx2G -Duser.language=en -Duser.country=US\" -rf csv -rff results/stage2/jmh/SearchEngineBenchmark.t16.csv"
+  ]
+}

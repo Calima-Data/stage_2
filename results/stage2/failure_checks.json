@@ -29,7 +29,7 @@
     {
       "scenario": "index_crash_before_commit",
       "passed": true,
-      "seconds": 5.8,
+      "seconds": 5.7,
       "detail": null
     },
     {
@@ -41,13 +41,13 @@
     {
       "scenario": "control_crash_after_ingest_before_recording",
       "passed": true,
-      "seconds": 7.0,
+      "seconds": 6.9,
       "detail": null
     },
     {
       "scenario": "control_crash_after_index_before_recording",
       "passed": true,
-      "seconds": 7.0,
+      "seconds": 7.1,
       "detail": null
     },
     {
@@ -59,47 +59,47 @@
     {
       "scenario": "outage_of_indexing_is_retried",
       "passed": true,
-      "seconds": 5.5,
+      "seconds": 5.7,
       "detail": null
     },
     {
       "scenario": "outage_of_search_delays_only_the_final_check",
       "passed": true,
-      "seconds": 5.7,
+      "seconds": 5.9,
       "detail": null
     },
     {
       "scenario": "search_keeps_serving_when_the_pipeline_is_down",
       "passed": true,
-      "seconds": 4.3,
+      "seconds": 4.4,
       "detail": null
     },
     {
       "scenario": "replica_failover",
       "passed": true,
-      "seconds": 7.9,
+      "seconds": 7.8,
       "detail": null
     },
     {
       "scenario": "concurrent_duplicates_across_replicas",
       "passed": true,
-      "seconds": 6.3,
+      "seconds": 5.5,
       "detail": null
     },
     {
       "scenario": "concurrent_distinct_books_across_replicas",
       "passed": true,
-      "seconds": 5.8,
+      "seconds": 5.6,
       "detail": null
     },
     {
       "scenario": "search_sees_complete_states_during_rebuild",
       "passed": true,
-      "seconds": 65.3,
+      "seconds": 45.2,
       "detail": {
-        "responses_checked": 29863,
+        "responses_checked": 27626,
         "rebuilds": 5,
-        "seconds_rebuilding": 46.3,
+        "seconds_rebuilding": 29.1,
         "books": 40
       }
     },

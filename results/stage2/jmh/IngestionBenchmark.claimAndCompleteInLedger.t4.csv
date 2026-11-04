@@ -1,0 +1,2 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
+"com.calima.search.ingestion.benchmark.IngestionBenchmark.claimAndCompleteInLedger","avgt",4,20,10180.978498,195.430115,"us/op"
