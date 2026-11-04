@@ -1,0 +1,48 @@
+# JMH, before the fair in-process write lock (commit fac36f2 plus benchmarks). -wi 2 -i 5 -w 2s -r 2s -f 1, -Xmx2G
+--- ledger t=1
+# Warmup Iteration   1: 1483.705 us/op
+# Warmup Iteration   2: 1411.629 us/op
+Iteration   1: 1501.079 us/op
+Iteration   2: 1382.679 us/op
+Iteration   3: 1398.929 us/op
+Iteration   4: 1364.264 us/op
+Iteration   5: 1373.961 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  1404.182 ± 214.271  us/op
+--- ledger t=2
+# Warmup Iteration   1: 19827.006 us/op
+# Warmup Iteration   2: 144210.018 us/op
+Iteration   1: 142177.204 us/op
+Iteration   2: 189572.004 us/op
+Iteration   3: 1308.790 us/op
+Iteration   4: 2818.660 us/op
+Iteration   5: 1527.339 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  67480.799 ± 351842.257  us/op
+--- ledger t=4
+# Warmup Iteration   1: 9028.082 ±(99.9%) 92611.063 us/op
+# Warmup Iteration   2: 1443556.478 ±(99.9%) 18174328.276 us/op
+Iteration   1: 2153.870 ±(99.9%) 8248.687 us/op
+Iteration   2: 1434.555 ±(99.9%) 793.816 us/op
+Iteration   3: 3289678.635 ±(99.9%) 42496083.172 us/op
+Iteration   4: 654808.658 ±(99.9%) 8439903.000 us/op
+Iteration   5: 5010721.533 ±(99.9%) 64723199.743 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  1791759.450 ± 8675938.986  us/op
+--- ledger t=8
+# Warmup Iteration   1: 1704154.856 ±(99.9%) 9207186.406 us/op
+# Warmup Iteration   2: 2340001.763 ±(99.9%) 12604344.905 us/op
+Iteration   1: 347803.382 ±(99.9%) 1667647.638 us/op
+Iteration   2: 3839221.154 ±(99.9%) 20581178.136 us/op
+Iteration   3: 33636.335 ±(99.9%) 116142.136 us/op
+Iteration   4: 566304.011 ±(99.9%) 3032056.335 us/op
+Iteration   5: 1240228.243 ±(99.9%) 6696953.183 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  1205438.625 ± 5920223.410  us/op
+--- publish FULL t=4
+# Warmup Iteration   1: 103.838 ±(99.9%) 333.878 ms/op
+# Warmup Iteration   2: 353.600 ±(99.9%) 1461.212 ms/op
+Iteration   1: 337.650 ±(99.9%) 548.801 ms/op
+Iteration   2: 531.170 ±(99.9%) 2441.550 ms/op
+Iteration   3: 452.063 ±(99.9%) 655.062 ms/op
+Iteration   4: 665.394 ±(99.9%) 605.287 ms/op
+Iteration   5: 424.592 ±(99.9%) 2372.558 ms/op
+DatamartPublishBenchmark.publishNewBook           FULL  avgt    5  482.174 ± 475.830  ms/o
+
+[exited with code 0]

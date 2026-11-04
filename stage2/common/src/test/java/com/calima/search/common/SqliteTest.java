@@ -97,6 +97,66 @@ class SqliteTest {
         }
     }
 
+    /**
+     * Without an in-process queue, SQLite's busy handler lets one thread keep the lock while the
+     * others sleep: JMH measured single operations of several seconds at 4 threads.
+     */
+    @Test
+    void writersInOneProcessTakeTurnsWithoutStarving() throws Exception {
+        int threads = 4;
+        int writesPerThread = 150;
+        try (Sqlite db = writerWithTable()) {
+            ExecutorService executor = Executors.newFixedThreadPool(threads);
+            java.util.List<Future<Long>> workers = new java.util.ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                workers.add(executor.submit(() -> {
+                    long worstNanos = 0;
+                    for (int write = 0; write < writesPerThread; write++) {
+                        long start = System.nanoTime();
+                        db.write(c -> {
+                            Sqlite.execute(c, "INSERT INTO t VALUES (1)");
+                            return null;
+                        });
+                        worstNanos = Math.max(worstNanos, System.nanoTime() - start);
+                    }
+                    return worstNanos;
+                }));
+            }
+            long worstNanos = 0;
+            for (Future<Long> worker : workers) {
+                worstNanos = Math.max(worstNanos, worker.get());
+            }
+            executor.shutdown();
+            assertEquals(threads * writesPerThread, count(db));
+            assertTrue(worstNanos < 500_000_000L, "worst write took " + worstNanos / 1_000_000 + " ms");
+        }
+    }
+
+    @Test
+    void aWriterThatWaitsTooLongInItsProcessGetsADocumentedError() throws Exception {
+        try (Sqlite db = writerWithTable()) {
+            CountDownLatch holding = new CountDownLatch(1);
+            CountDownLatch finish = new CountDownLatch(1);
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Future<?> holder = executor.submit(() -> db.write(c -> {
+                holding.countDown();
+                try {
+                    finish.await();
+                } catch (InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
+                return null;
+            }));
+            holding.await();
+            ApiException busy = assertThrows(ApiException.class, () -> db.write(c -> null));
+            assertEquals(503, busy.status());
+            assertEquals("database_busy", busy.code());
+            finish.countDown();
+            holder.get();
+            executor.shutdown();
+        }
+    }
+
     @Test
     void exhaustedPoolReportsADocumentedError() throws Exception {
         try (Sqlite db = writerWithTable()) {

@@ -1,0 +1,37 @@
+# JMH, after the fair in-process write lock. Same parameters as contention_before_fix.txt
+--- ledger t=1
+# Warmup Iteration   1: 1557.162 us/op
+# Warmup Iteration   2: 1548.655 us/op
+Iteration   1: 1542.564 us/op
+Iteration   2: 1403.688 us/op
+Iteration   3: 1484.515 us/op
+Iteration   4: 1401.833 us/op
+Iteration   5: 1475.622 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  1461.644 ± 229.450  us/op
+--- ledger t=2
+# Warmup Iteration   1: 3386.687 us/op
+# Warmup Iteration   2: 3299.544 us/op
+Iteration   1: 3370.873 us/op
+Iteration   2: 3254.409 us/op
+Iteration   3: 3370.488 us/op
+Iteration   4: 3280.760 us/op
+Iteration   5: 3355.050 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  3326.316 ± 210.979  us/op
+--- ledger t=4
+# Warmup Iteration   1: 8491.507 ±(99.9%) 308.407 us/op
+# Warmup Iteration   2: 7930.458 ±(99.9%) 13.850 us/op
+Iteration   1: 7861.381 ±(99.9%) 6.134 us/op
+Iteration   2: 8202.379 ±(99.9%) 10.612 us/op
+Iteration   3: 7894.185 ±(99.9%) 7.961 us/op
+Iteration   4: 8193.924 ±(99.9%) 8.716 us/op
+Iteration   5: 7565.431 ±(99.9%) 3.891 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  7943.460 ± 1022.131  us/op
+--- ledger t=8
+# Warmup Iteration   1: 16941.175 ±(99.9%) 164.077 us/op
+# Warmup Iteration   2: 15731.565 ±(99.9%) 8.682 us/op
+Iteration   1: 16475.218 ±(99.9%) 8.887 us/op
+Iteration   2: 15363.845 ±(99.9%) 9.081 us/op
+Iteration   3: 15731.043 ±(99.9%) 4.458 us/op
+Iteration   4: 16118.831 ±(99.9%) 10.264 us/op
+Iteration   5: 15533.348 ±(99.9%) 3.305 us/op
+IngestionBenchmark.claimAndCompleteInLedger  avgt    5  15844.457 ± 1736.829  us/op

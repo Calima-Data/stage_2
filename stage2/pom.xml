@@ -143,7 +143,7 @@
                             <goals><goal>single</goal></goals>
                             <configuration>
                                 <descriptors>
-                                    <descriptor>${maven.multiModuleProjectDirectory}/benchmarks-assembly.xml</descriptor>
+                                    <descriptor>${project.parent.basedir}/benchmarks-assembly.xml</descriptor>
                                 </descriptors>
                                 <archive>
                                     <manifest>

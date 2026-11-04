@@ -10,6 +10,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteErrorCode;
 import org.sqlite.SQLiteException;
@@ -36,6 +37,7 @@ public final class Sqlite implements AutoCloseable {
     private final String synchronousMode;
     private final BlockingQueue<Connection> idle;
     private final AtomicInteger created = new AtomicInteger();
+    private final ReentrantLock processWriteLock = new ReentrantLock(true);
     private final int poolSize;
     private final int poolWaitMs;
 
@@ -78,9 +80,28 @@ public final class Sqlite implements AutoCloseable {
         }
     }
 
-    /** Runs the work inside {@code BEGIN IMMEDIATE}, the single write lock across processes. */
+    /**
+     * Runs the work inside {@code BEGIN IMMEDIATE}, the single write lock across processes.
+     *
+     * <p>Threads of this process first queue on a fair lock. Left to SQLite's busy handler alone,
+     * they sleep with growing delays even when the database is free, so one thread keeps winning
+     * while others starve: JMH measured single operations of several seconds at 4 threads. This lock
+     * orders only this process; replicas still wait on SQLite's own lock.
+     */
     public <T> T write(Work<T> work) throws SQLException {
-        return transaction("BEGIN IMMEDIATE", work);
+        try {
+            if (!processWriteLock.tryLock(poolWaitMs, TimeUnit.MILLISECONDS)) {
+                throw new ApiException(503, "database_busy", "Too many writers are waiting for the database", 1);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ApiException(503, "database_busy", "Interrupted while waiting for the database", 1);
+        }
+        try {
+            return transaction("BEGIN IMMEDIATE", work);
+        } finally {
+            processWriteLock.unlock();
+        }
     }
 
     /** Runs the work inside one read transaction, so every statement sees the same snapshot. */
