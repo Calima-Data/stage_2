@@ -1,0 +1,22 @@
+# Real Project Gutenberg books served by the local stand-in during the integration benchmarks.
+# Book IDs beyond this list replay one of these texts: the workload grows, the vocabulary does not.
+1342  # Pride and Prejudice
+84    # Frankenstein
+11    # Alice's Adventures in Wonderland
+16    # Peter Pan
+2701  # Moby Dick
+1661  # The Adventures of Sherlock Holmes
+2000  # Don Quijote (Spanish)
+64317 # The Great Gatsby
+98    # A Tale of Two Cities
+74    # The Adventures of Tom Sawyer
+345   # Dracula
+1952  # The Yellow Wallpaper
+1400  # Great Expectations
+1260  # Jane Eyre
+174   # The Picture of Dorian Gray
+120   # Treasure Island
+2554  # Crime and Punishment
+1184  # The Count of Monte Cristo
+5200  # Metamorphosis
+1232  # The Prince

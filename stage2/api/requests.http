@@ -1,0 +1,119 @@
+### Runnable examples of every route, for the VS Code REST Client or IntelliJ HTTP Client.
+### First: python scripts/api_check.py --keep-running --data-dir <folder outside OneDrive>
+### Expected results are in the comments; scripts/api_check.py checks them automatically.
+
+@search = http://localhost:7003
+@ingestion = http://localhost:7001
+@indexing = http://localhost:7002
+@control = http://localhost:7000
+
+### ---------- Front-end ----------
+
+### 200, total 4, ranked by BM25: "adventure" is in four fixture books
+GET {{search}}/search?q=adventure
+
+### 200, one filter
+GET {{search}}/search?q=adventure&language=en
+
+### 200, author filter ignores case
+GET {{search}}/search?q=adventure&author=CARROLL
+
+### 200, year filter
+GET {{search}}/search?q=adventure&year=1865
+
+### 200, all filters combined, total 1
+GET {{search}}/search?q=adventure&author=carroll&language=en&year=1865
+
+### 200, several terms must all match
+GET {{search}}/search?q=white%20rabbit
+
+### 200, diacritics are optional: finds Don Quijote
+GET {{search}}/search?q=espana&language=es
+
+### 200, empty results
+GET {{search}}/search?q=unicorn
+
+### 200, second page of two results; total stays 4
+GET {{search}}/search?q=adventure&limit=2&offset=2
+
+### 400 missing_query
+GET {{search}}/search
+
+### 400 invalid_year
+GET {{search}}/search?q=adventure&year=18x3
+
+### 400 invalid_limit
+GET {{search}}/search?q=adventure&limit=1000
+
+### 400 unknown_parameter
+GET {{search}}/search?q=adventure&lang=en
+
+### 200, values for filter controls
+GET {{search}}/search/filters
+
+### 200, book details
+GET {{search}}/books/1342
+
+### 404 book_not_found
+GET {{search}}/books/999999
+
+### ---------- Internal ----------
+
+### 200 already_available: the fixture book was ingested during start-up
+POST {{ingestion}}/ingest/1342
+
+### 200 status available, with path, sizes and checksum
+GET {{ingestion}}/ingest/status/1342
+
+### 200 status not_ingested
+GET {{ingestion}}/ingest/status/8888
+
+### 200 list of available books
+GET {{ingestion}}/ingest/list
+
+### 422 invalid_book_format: this fixture has no Gutenberg markers
+POST {{ingestion}}/ingest/9050
+
+### 404 book_not_found: the local stand-in serves IDs up to 20000
+POST {{ingestion}}/ingest/99999
+
+### 200 unchanged: already indexed with the same content
+POST {{indexing}}/index/update/1342
+
+### 409 book_not_ready: ingestion has not completed for this book
+POST {{indexing}}/index/update/8888
+
+### 200 statistics
+GET {{indexing}}/index/status
+
+### 200 indexed
+GET {{indexing}}/index/status/1342
+
+### ---------- Operational and administrative ----------
+
+### 202: known books are not processed again
+POST {{control}}/control/books
+Content-Type: application/json
+
+{"book_ids": [1342, 84]}
+
+### 400 invalid_body
+POST {{control}}/control/books
+Content-Type: application/json
+
+{"book_ids": "not a list"}
+
+### 200 state PUBLISHED, with timings
+GET {{control}}/control/books/1342
+
+### 409 task_not_failed
+POST {{control}}/control/books/1342/retry
+
+### 200 counts per state
+GET {{control}}/control/status
+
+### 200 books_processed: rebuilds the datamart atomically
+POST {{indexing}}/index/rebuild
+
+### 200 liveness and thread configuration
+GET {{search}}/status

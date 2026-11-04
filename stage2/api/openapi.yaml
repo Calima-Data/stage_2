@@ -1,0 +1,625 @@
+openapi: 3.0.3
+info:
+  title: Calima Data search engine
+  version: 2.0.0
+  description: |
+    HTTP contract of Stage 2. Each service is a separate process, so a route is served only by
+    the service named in its tag; the `servers` list gives the default port of the first replica
+    of each one. See ENDPOINTS.md for the inventories by consumer.
+
+    All errors share the `Error` schema, and clients branch on its stable `error` code.
+    Services answer `503` with a `Retry-After` header when a dependency or the SQLite lock is
+    busy; those errors are always safe to retry.
+servers:
+  - url: http://localhost:7003
+    description: Search Service (front-end-facing)
+  - url: http://localhost:7001
+    description: Ingestion Service (internal)
+  - url: http://localhost:7002
+    description: Indexing Service (internal)
+  - url: http://localhost:7000
+    description: Control Module (administrative)
+tags:
+  - name: search
+    description: "Front-end API. Provider: Search Service. Consumer: the front-end."
+  - name: ingestion
+    description: "Internal. Provider: Ingestion Service. Consumers: Control Module, Indexing Service."
+  - name: indexing
+    description: "Internal. Provider: Indexing Service. Consumer: Control Module; rebuild is for operators."
+  - name: control
+    description: "Administrative. Provider: Control Module. Consumers: operators and scripts."
+  - name: operations
+    description: "Operational. Provider: every service. Consumers: deployment and monitoring scripts."
+paths:
+  /search:
+    get:
+      tags: [search]
+      operationId: search
+      summary: Keyword search with optional filters
+      description: |
+        A book matches when it contains **every** term of `q` (AND) and every given filter. Terms
+        are normalized as in the index: letters and digits, lower-cased, without diacritics.
+
+        **Ordering:** BM25 relevance descending, then `book_id` ascending, so pages are stable
+        while the index does not change.
+
+        **Consistency:** all of a response comes from one published index version.
+
+        A valid query without matches is `200` with an empty `results`. Read-only: safe to retry.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: At most 200 characters and 10 distinct terms, with at least one letter or digit.
+          schema: {type: string, maxLength: 200}
+          example: adventure
+        - name: author
+          in: query
+          description: Case- and diacritic-insensitive substring of the author's name. `%` and `_` are literal.
+          schema: {type: string, minLength: 1, maxLength: 100}
+          example: carroll
+        - name: language
+          in: query
+          description: |
+            Exact ISO 639-1 code, case-insensitive. Codes assigned by the indexer: en, fr, de, es, it,
+            pt, nl, fi, sv, da, no, la, el, eo, ru, zh, ja, pl, hu, ca; and `und` for any other language.
+            A well-formed code that no book has returns an empty page. `GET /search/filters` lists
+            the codes present.
+          schema: {type: string, pattern: '^([A-Za-z]{2}|[Uu][Nn][Dd])$'}
+          example: en
+        - name: year
+          in: query
+          description: |
+            Exact year of original publication. It comes from the book's header or from a curated
+            list, and many books have none; those never match this filter. It is not the eBook's
+            release date.
+          schema: {type: string, pattern: '^\d{4}$'}
+          example: "1865"
+        - name: offset
+          in: query
+          description: Results to skip.
+          schema: {type: integer, minimum: 0, maximum: 1000000, default: 0}
+        - name: limit
+          in: query
+          description: Page size.
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        "200":
+          description: One page of results. `total` counts all matches; `results` holds only this page.
+          headers:
+            X-Index-Version:
+              description: Published index version that produced this response. For diagnosis; front-ends can ignore it.
+              schema: {type: integer}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SearchResponse"}
+              example:
+                query: adventure
+                filters: {language: en}
+                total: 2
+                offset: 0
+                limit: 20
+                results:
+                  - {book_id: 11, title: "Alice's Adventures in Wonderland", author: Lewis Carroll, language: en, year: 1865, score: 0.2931}
+                  - {book_id: 1342, title: Pride and Prejudice, author: Jane Austen, language: en, year: 1813, score: 0.2214}
+        "400":
+          description: |
+            Malformed parameter. Codes: `missing_query`, `invalid_query`, `invalid_author`,
+            `invalid_language`, `invalid_year`, `invalid_offset`, `invalid_limit`,
+            `unknown_parameter`, `repeated_parameter`.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+              example: {error: invalid_year, message: "year must have four digits, such as 1813"}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /search/filters:
+    get:
+      tags: [search]
+      operationId: searchFilters
+      summary: Filter values available in the published index
+      description: Lets a front-end offer only filters that can match, with their book counts. At most 200 values per filter; `authors` are ordered by book count, the others by value.
+      responses:
+        "200":
+          description: Filter values.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/FiltersResponse"}
+              example:
+                languages: [{value: en, books: 6}, {value: es, books: 1}]
+                years: [{value: 1813, books: 1}]
+                authors: [{value: Jane Austen, books: 1}]
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /books/{book_id}:
+    get:
+      tags: [search]
+      operationId: getBook
+      summary: Metadata of one published book
+      description: Also used by the Control Module as the final check that a book is visible to front-ends. Read-only.
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "200":
+          description: The book.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BookDetails"}
+              example: {book_id: 11, title: "Alice's Adventures in Wonderland", author: Lewis Carroll, language: en, year: 1865, word_count: 29, unique_terms: 24, indexed_at: "2026-11-04T12:00:00Z"}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "404":
+          description: "Not published. Code: `book_not_found`."
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+              example: {error: book_not_found, message: Book 99 is not published}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /ingest/{book_id}:
+    post:
+      tags: [ingestion]
+      operationId: ingestBook
+      summary: Download a book and store it in the datalake
+      description: |
+        **Caller:** Control Module, for tasks in state PENDING.
+
+        **Synchronous:** `200` means the header and body are complete on disk and the book is
+        recorded as available.
+
+        **Idempotent:** a repeated call returns `already_available` without downloading. Concurrent
+        calls for one book, also across replicas, download it once: the others get `409`. After a
+        crash, a later call takes over once the lease expires and writes to the path of the
+        first attempt, so no second copy appears.
+
+        **Caller timeout and failure:** the Control Module waits up to `INGEST_TIMEOUT_MS` (60 s).
+        On `409`, `502`, `503` or a connection error it retries with backoff, trying the next replica;
+        `404` and `422` are permanent and it marks the task FAILED.
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "200":
+          description: The book is available.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IngestResponse"}
+              examples:
+                downloaded: {value: {book_id: 1342, status: downloaded, path: datalake/20261104/14/1342}}
+                repeated: {value: {book_id: 1342, status: already_available, path: datalake/20261104/14/1342}}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "404":
+          description: "The source has no such book. Permanent. Code: `book_not_found`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "409":
+          description: "Another request holds this book. Retry later. Code: `ingestion_in_progress`."
+          headers: {Retry-After: {schema: {type: integer}}}
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "422":
+          description: "The text lacks the Gutenberg markers. Permanent. Code: `invalid_book_format`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "502":
+          description: "The download or the local write failed. Retry. Code: `upstream_unavailable`."
+          headers: {Retry-After: {schema: {type: integer}}}
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /ingest/status/{book_id}:
+    get:
+      tags: [ingestion]
+      operationId: ingestStatus
+      summary: Whether a book has completed ingestion
+      description: |
+        **Caller:** Indexing Service, before reading a book. This is the readiness contract: only
+        `available` books may be indexed, and only then are the path, sizes and checksum returned.
+        **Timeout:** `INTERNAL_HTTP_TIMEOUT_MS` (10 s); a failure makes the caller answer `503`.
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "200":
+          description: The state of the book; an unknown book is `not_ingested`.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IngestStatus"}
+              examples:
+                available: {value: {book_id: 1342, status: available, path: datalake/20261104/14/1342, header_bytes: 840, body_bytes: 742000, body_sha256: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b}}
+                unknown: {value: {book_id: 5, status: not_ingested}}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /ingest/list:
+    get:
+      tags: [ingestion]
+      operationId: ingestList
+      summary: All available books
+      description: "**Caller:** Indexing Service, during a rebuild. Lists only completed books, by ascending ID."
+      responses:
+        "200":
+          description: The available books.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IngestList"}
+              example: {count: 3, books: [5, 17, 1342]}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /index/update/{book_id}:
+    post:
+      tags: [indexing]
+      operationId: indexUpdate
+      summary: Index one book and publish it
+      description: |
+        **Caller:** Control Module, for tasks in state INGESTED.
+
+        **Synchronous:** `200` means metadata, postings and the index version were committed in one
+        transaction: the book is already searchable.
+
+        **Idempotent:** indexing the same content again returns `unchanged` and changes nothing.
+        Concurrent calls for one book, also across replicas, publish it once.
+
+        **Caller timeout and failure:** the Control Module waits up to `INDEX_TIMEOUT_MS` (60 s). On
+        `409 book_not_ready` it returns the task to PENDING; on `500` or `503` or a connection error
+        it retries with backoff.
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "200":
+          description: The index holds this book.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IndexUpdate"}
+              examples:
+                updated: {value: {book_id: 1342, index: updated}}
+                repeated: {value: {book_id: 1342, index: unchanged}}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "409":
+          description: "The book has not completed ingestion. Code: `book_not_ready`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "500":
+          description: "The files do not match the ledger. Nothing is published. Code: `datalake_inconsistent`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /index/rebuild:
+    post:
+      tags: [indexing]
+      operationId: indexRebuild
+      summary: Rebuild the whole datamart from the available books
+      description: |
+        **Caller:** an operator. Not part of the normal workflow.
+
+        **Synchronous and atomic:** runs in one transaction. Searches keep reading the previous
+        version until the commit, and any failure leaves it intact. Writers wait meanwhile; updates
+        that wait too long get `503` and the Control Module retries them.
+
+        **Idempotent:** repeating it produces the same content. A second call while one runs gets `409`
+        in the same replica, or `503` in another. Allow a generous client timeout.
+      responses:
+        "200":
+          description: The rebuild is published.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IndexRebuild"}
+              example: {books_processed: 1000, elapsed_time: 35.2s}
+        "409":
+          description: "A rebuild is running in this replica. Code: `rebuild_in_progress`."
+          headers: {Retry-After: {schema: {type: integer}}}
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "500":
+          description: "A listed book cannot be read. The previous index stays published. Code: `datalake_inconsistent`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /index/status:
+    get:
+      tags: [indexing]
+      operationId: indexStatus
+      summary: Statistics of the published index
+      description: "**Caller:** operators and benchmark scripts."
+      responses:
+        "200":
+          description: The statistics.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IndexStatus"}
+              example: {books_indexed: 1200, index_version: 1200, last_update: "2026-11-04T14:05:00Z", index_size_MB: 42.7}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /index/status/{book_id}:
+    get:
+      tags: [indexing]
+      operationId: indexBookStatus
+      summary: Whether one book is indexed
+      description: "**Caller:** operators and the validation scripts."
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "200":
+          description: The state of the book.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IndexBookStatus"}
+              example: {book_id: 1342, status: indexed}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "503": {$ref: "#/components/responses/Unavailable"}
+  /control/books:
+    post:
+      tags: [control]
+      operationId: submitBooks
+      summary: Submit books to the pipeline
+      description: |
+        **Asynchronous:** `202` only means the books are recorded. Observe completion with
+        `GET /control/books/{book_id}` (state PUBLISHED or FAILED) or `GET /control/status`.
+
+        **Idempotent:** a known book keeps its state and does not run again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SubmitBooks"}
+            examples:
+              list: {value: {book_ids: [1342, 84, 11]}}
+              range: {value: {from: 1, to: 100}}
+      responses:
+        "202":
+          description: Recorded.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SubmitResult"}
+              example: {requested: 3, enqueued: 2, already_known: 1}
+        "400":
+          description: "Malformed body, IDs that are not positive, or more than 100000 books. Code: `invalid_body`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+  /control/books/{book_id}:
+    get:
+      tags: [control]
+      operationId: getTask
+      summary: Workflow state of one book
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "200":
+          description: The task.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Task"}
+              example: {book_id: 1342, state: PUBLISHED, attempts: 0, total_retries: 1, last_error: null, ingest_ms: 410, index_ms: 95, publish_ms: 3, coordination_ms: 12.4}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "404":
+          description: "Never submitted. Code: `task_not_found`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+  /control/books/{book_id}/retry:
+    post:
+      tags: [control]
+      operationId: retryTask
+      summary: Return a FAILED book to the queue
+      description: "**Asynchronous:** `202` means queued. Any other state answers `409`, so repeating the call does nothing."
+      parameters: [{$ref: "#/components/parameters/BookId"}]
+      responses:
+        "202":
+          description: Queued again.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RetryResult"}
+              example: {book_id: 1342, state: PENDING}
+        "400": {$ref: "#/components/responses/InvalidBookId"}
+        "409":
+          description: "The book is not FAILED. Code: `task_not_failed`."
+          content: {application/json: {schema: {$ref: "#/components/schemas/Error"}}}
+  /control/status:
+    get:
+      tags: [control]
+      operationId: controlStatus
+      summary: Progress of the pipeline
+      description: Tasks per state, and timing means over published tasks. Used to observe submitted work and by the benchmarks.
+      responses:
+        "200":
+          description: The summary.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ControlStatus"}
+  /status:
+    get:
+      tags: [operations]
+      operationId: serviceStatus
+      summary: Liveness and configuration of one process
+      description: |
+        Served by **every** replica of every service, on its own port. `scripts/deploy.py` polls it
+        until a process is ready. It reports the thread configuration, and `instance` identifies the
+        answering process. Extra fields depend on the service.
+      responses:
+        "200":
+          description: The process is running.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ServiceStatus"}
+              example: {service: search-service, status: running, instance: 1234@host, http_threads: "framework default (Jetty pool of at most 250)", db_read_connections: 16, cache_entries: 1000}
+components:
+  parameters:
+    BookId:
+      name: book_id
+      in: path
+      required: true
+      description: Project Gutenberg ID, a positive integer.
+      schema: {type: integer, minimum: 1}
+      example: 1342
+  responses:
+    InvalidBookId:
+      description: "`book_id` is not a positive integer. Code: `invalid_book_id`."
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+          example: {error: invalid_book_id, message: "book_id must be a positive integer, got: abc"}
+    Unavailable:
+      description: |
+        Temporary: a dependency, the SQLite lock or the connection pool is busy, or nothing has been
+        published yet. Retry after `Retry-After` seconds. Codes: `database_busy`, `service_busy`,
+        `ingestion_unavailable`, `index_unavailable`.
+      headers: {Retry-After: {schema: {type: integer}}}
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+          example: {error: index_unavailable, message: No index has been published yet}
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      additionalProperties: false
+      properties:
+        error: {type: string, description: Stable code for clients to branch on.}
+        message: {type: string, description: Explanation for people.}
+    SearchResult:
+      type: object
+      required: [book_id, title, author, language, year, score]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        title: {type: string, nullable: true}
+        author: {type: string, nullable: true}
+        language: {type: string}
+        year: {type: integer, nullable: true}
+        score: {type: number, description: BM25 relevance. Comparable only within one response.}
+    SearchResponse:
+      type: object
+      required: [query, filters, total, offset, limit, results]
+      additionalProperties: false
+      properties:
+        query: {type: string}
+        filters:
+          type: object
+          description: The filters applied; absent filters are omitted.
+          additionalProperties: false
+          properties:
+            author: {type: string}
+            language: {type: string}
+            year: {type: integer}
+        total: {type: integer, minimum: 0, description: All matches across every page.}
+        offset: {type: integer, minimum: 0}
+        limit: {type: integer, minimum: 1}
+        results:
+          type: array
+          items: {$ref: "#/components/schemas/SearchResult"}
+    FilterValue:
+      type: object
+      required: [value, books]
+      additionalProperties: false
+      properties:
+        value: {oneOf: [{type: string}, {type: integer}]}
+        books: {type: integer}
+    FiltersResponse:
+      type: object
+      required: [languages, years, authors]
+      additionalProperties: false
+      properties:
+        languages: {type: array, items: {$ref: "#/components/schemas/FilterValue"}}
+        years: {type: array, items: {$ref: "#/components/schemas/FilterValue"}}
+        authors: {type: array, items: {$ref: "#/components/schemas/FilterValue"}}
+    BookDetails:
+      type: object
+      required: [book_id, title, author, language, year, word_count, unique_terms, indexed_at]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        title: {type: string, nullable: true}
+        author: {type: string, nullable: true}
+        language: {type: string}
+        year: {type: integer, nullable: true}
+        word_count: {type: integer}
+        unique_terms: {type: integer}
+        indexed_at: {type: string, format: date-time}
+    IngestResponse:
+      type: object
+      required: [book_id, status, path]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        status: {type: string, enum: [downloaded, already_available]}
+        path: {type: string, description: Logical location. Files are <path>.header.txt and <path>.body.txt under DATALAKE_PATH.}
+    IngestStatus:
+      type: object
+      required: [book_id, status]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        status: {type: string, enum: [available, in_progress, failed, not_ingested]}
+        path: {type: string}
+        header_bytes: {type: integer}
+        body_bytes: {type: integer}
+        body_sha256: {type: string}
+        last_error: {type: string, nullable: true}
+    IngestList:
+      type: object
+      required: [count, books]
+      additionalProperties: false
+      properties:
+        count: {type: integer}
+        books: {type: array, items: {type: integer}}
+    IndexUpdate:
+      type: object
+      required: [book_id, index]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        index: {type: string, enum: [updated, unchanged]}
+    IndexRebuild:
+      type: object
+      required: [books_processed, elapsed_time]
+      additionalProperties: false
+      properties:
+        books_processed: {type: integer}
+        elapsed_time: {type: string}
+    IndexStatus:
+      type: object
+      required: [books_indexed, index_version, last_update, index_size_MB]
+      additionalProperties: false
+      properties:
+        books_indexed: {type: integer}
+        index_version: {type: integer, description: Grows with every publication.}
+        last_update: {type: string, format: date-time, nullable: true}
+        index_size_MB: {type: number}
+    IndexBookStatus:
+      type: object
+      required: [book_id, status]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        status: {type: string, enum: [indexed, not_indexed]}
+    SubmitBooks:
+      type: object
+      description: Either `book_ids`, or both `from` and `to` (inclusive). At most 100000 books.
+      properties:
+        book_ids: {type: array, minItems: 1, items: {type: integer, minimum: 1}}
+        from: {type: integer, minimum: 1}
+        to: {type: integer, minimum: 1}
+    SubmitResult:
+      type: object
+      required: [requested, enqueued, already_known]
+      additionalProperties: false
+      properties:
+        requested: {type: integer}
+        enqueued: {type: integer}
+        already_known: {type: integer}
+    Task:
+      type: object
+      required: [book_id, state, attempts, total_retries, last_error, ingest_ms, index_ms, publish_ms, coordination_ms]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        state: {type: string, enum: [PENDING, INGESTED, INDEXED, PUBLISHED, FAILED]}
+        attempts: {type: integer, description: Failed attempts of the current step.}
+        total_retries: {type: integer}
+        last_error: {type: string, nullable: true}
+        ingest_ms: {type: integer}
+        index_ms: {type: integer}
+        publish_ms: {type: integer}
+        coordination_ms: {type: number, description: Time spent claiming the task and recording its steps.}
+    RetryResult:
+      type: object
+      required: [book_id, state]
+      additionalProperties: false
+      properties:
+        book_id: {type: integer}
+        state: {type: string}
+    ControlStatus:
+      type: object
+      required: [states, published_tasks]
+      additionalProperties: false
+      properties:
+        states:
+          type: object
+          required: [PENDING, INGESTED, INDEXED, PUBLISHED, FAILED]
+          additionalProperties: {type: integer}
+        published_tasks:
+          type: object
+          required: [count, avg_queue_wait_ms, avg_ingest_ms, avg_index_ms, avg_publish_ms, avg_coordination_ms, avg_total_ms, first_queued_at, last_finished_at, total_retries]
+          additionalProperties: {type: number}
+    ServiceStatus:
+      type: object
+      required: [service, status, instance, http_threads]
+      properties:
+        service: {type: string}
+        status: {type: string}
+        instance: {type: string}
+        http_threads: {oneOf: [{type: integer}, {type: string}]}
