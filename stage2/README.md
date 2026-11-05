@@ -196,11 +196,19 @@ python scripts/build_pdf.py docs/REPORT.md                               # repor
 `all` runs five parts, which can also run alone: `real-gutenberg`, `pipeline`, `search`, `mixed` and `growth`.
 Results of `all` are appended to the CSV files, so move old files away before measuring again.
 
-Two more scripts explain results rather than produce them:
+Five more scripts explain results rather than produce them:
 
 ```bash
 # Is a slow period the system's or the host's? Runs `growth` next to independent disk and CPU probes.
 python scripts/diagnose_stalls.py --data-dir C:/tmp/bench --out ../results/stage2/evidence/stalls
+# The same, plus Defender/indexer activity and the physical disk queue (Windows only).
+python scripts/diagnose_stalls.py --data-dir C:/tmp/bench --out ../results/stage2/evidence/stalls_security --security-counters
+# Does the disk stall with no service running? Writes 24 GB with fsync and deletes it.
+python scripts/diagnose_disk_raw.py --data-dir C:/tmp/bench --gb 24 --out ../results/stage2/evidence/disk_raw/disk_raw.csv
+# Why does one client get so little? Compares 1 and 2 clients, with and without busy neighbours.
+python scripts/diagnose_one_client.py --data-dir C:/tmp/bench --repeats 3
+# Is the read drop in the mixed workload just CPU competition? Replaces the writers with idle loops.
+python scripts/diagnose_mixed_cpu.py --data-dir C:/tmp/bench --repeats 3
 # Why does publishing slow down? Log volume and time of one book, by insertion order and page cache.
 python scripts/diagnose_publish.py C:/tmp/bench/growth_run/datamart/search.db C:/tmp/diagnose
 ```

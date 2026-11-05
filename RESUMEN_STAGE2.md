@@ -149,33 +149,32 @@ Medidos en un portátil AMD Ryzen 7 4800H (8 núcleos físicos, 16 lógicos), 16
 
 En conjunto, el rendimiento pasó de **4,10 a 6,46 libros/s (+58%)**.
 
-**Paradas puntuales.** Algunas ejecuciones son mucho más lentas que sus repeticiones (3,04 frente a 4,92 libros/s). Lo investigué con una sonda independiente: durante esas paradas, un proceso ajeno ve subir su `fsync` de unos 3 a unos 25 ms, su CPU no cambia, y el disco escribe menos. El mismo efecto apareció en un script de SQLite sin ningún servicio (publicaciones de 8–9 s). **La espera está en el disco o el sistema, no en la lógica de los servicios.** Mantuve esas ejecuciones en las medias y las tablas muestran cada valor.
+**Paradas puntuales: ya está resuelto de dónde vienen.** Algunas ejecuciones son mucho más lentas que sus repeticiones (3,04 frente a 4,92 libros/s). Lo estudié en tres pasos: (1) una sonda independiente ve subir su `fsync` de unos 3 a unos 25–260 ms durante esas paradas sin que su CPU cambie; (2) los contadores de Windows muestran que en las paradas Defender casi no trabaja (0–2,5% de un núcleo, menos que en las ventanas normales), mientras que la cola del disco físico sube de ~1 a ~3 peticiones y la escritura cae de ~120 a 7–14 MB/s; (3) un test que **no usa ningún servicio del proyecto** (escribir 24 GB con `fsync`) dio una mediana de **13,6 MB/s**, con esperas de hasta 6 s. Es un **Intel SSDPEKNW512G8L** (familia Intel 660p: memoria QLC con caché SLC dinámica, y el disco estaba al 85%). **Conclusión: las paradas son del disco bajo escrituras sostenidas, no de los servicios.** Mantuve esas ejecuciones en las medias y las tablas muestran cada valor. Lo que no puedo afirmar: que sea la caché SLC en concreto (sus contadores internos exigen administrador) ni descartar del todo a Defender (nunca lo desactivé).
 
 ## 5. Qué queda pendiente o es dudoso
 
 ### Lo tienes que hacer tú
 
-1. **Portada del informe:** completar nombres completos y DNI/ID en `stage2/docs/REPORT.md` y regenerar con `python scripts/build_pdf.py docs/REPORT.md`. **Puse el curso 2026/2027 deduciéndolo de las fechas de Git**; compruébalo.
+1. **Portada del informe:** ya tiene los nombres (**Guillermo Oltra Rodriguez** y **Abdelaziz Choukri**) y el curso **2026-2027**, confirmado en tus informes individuales. Faltan los **ID de estudiante**, que no aparecen en ningún sitio del repositorio ni de tus carpetas, y el apellido de Abdelaziz sale del correo de sus commits (`Abdelazizchoukri05@gmail.com`), así que compruébalo. Se completa en `stage2/docs/REPORT.md` y se regenera con `python scripts/build_pdf.py docs/REPORT.md`.
 2. **Repositorio:** el enunciado exige `https://github.com/Calima-Data/stage_2`, y esa es la URL de la portada, pero el trabajo está en la rama `stage-2` del repo `stage_1`. No he creado ni subido nada, y no he comprobado si ya existe. Dímelo cuando quieras subirlo.
 3. **Historial de Git:** el enunciado pide contribuciones de todos los miembros, y los 27 commits nuevos tienen un solo autor. Además se evalúan las contribuciones individuales en la defensa. Es algo que tenéis que resolver como grupo.
 4. **Defensa oral:** este trabajo se hizo con mucha ayuda de una IA, y cada miembro debe poder explicarlo y justificarlo. Lee el informe y `DECISIONS.md`.
 
 ### Limitaciones de las medidas
 
-- **Máquina no aislada:** un portátil con Windows Defender y otros servicios en marcha, aunque el enunciado recomienda un host inactivo. El mismo experimento varió hasta un **10%** entre dos momentos, así que las diferencias menores no significan nada.
+- **Máquina no aislada:** un portátil con Windows Defender y otros servicios en marcha, aunque el enunciado recomienda un host inactivo. El mismo experimento varió hasta un **10%** entre dos momentos (el disco cambia de velocidad según lo que se haya escrito antes), así que las diferencias menores no significan nada.
 - **El generador de carga y el sustituto de Gutenberg comparten máquina** con los servicios, y consumen hasta 5,9 núcleos.
 - **Corpus repetido:** 20 libros reales que se reutilizan, sin vocabulario nuevo. El crecimiento real del índice sería peor.
 - **El crecimiento de 1000 libros es una sola ejecución:** muestra la forma de la curva, no un valor preciso.
 - **El JMH de búsqueda no es monótono** a pocos hilos (916 µs con 2 y 719 con 4). No lo investigué.
 
-### Preguntas sin resolver
+### Preguntas que tenía abiertas y qué pasó
 
-Están señaladas como tales en el informe, sin inventar explicaciones:
-
-- La causa exacta de las paradas de disco (SSD, sistema o antivirus). Intenté registrar la actividad de Defender y no obtuve datos.
-- Por qué 2 clientes rinden 2,6 veces más que 1. Descarté el calentamiento de la JVM como causa principal (solo +9%).
-- Por qué las lecturas bajan un 24% al escribir, si la CPU del host sigue en el 66%, y por qué sube tanto la peor petición.
-- Qué parte exacta de la mejora del +58% corresponde a cada cambio: se midió entre campañas distintas, no por separado.
+- **Causa de las paradas:** resuelta en lo esencial (ver arriba): es el disco.
+- **Por qué 2 clientes rinden más que 1:** en realidad no es una anomalía. Un cliente que espera la respuesta hace como mucho una petición por tiempo de respuesta (1 ÷ 1,57 ms ≈ 640 peticiones/s; medido 604). Con dos, 2,2 veces más (1332), que es lo que predice la latencia. Descarté el calentamiento (+9%) y la CPU en reposo (cargar el resto de núcleos solo da +5%). Que el coste de CPU por petición baje de 1,76 a 1,46 ms es coherente con un coste fijo de ~0,3 núcleos de la JVM; ese coste fijo no lo medí directamente.
+- **Por qué las lecturas bajan un 24% al escribir:** descarté que sea competencia por CPU: sustituir los escritores por procesos que solo giran en bucle solo resta un 2–5% y la peor petición se queda en 28–94 ms (no 320–480). Entonces el efecto viene de las escrituras en la base de datos compartida, pero **no aislé el mecanismo** (candidatos: cachés de página invalidadas tras cada commit, el log). Sigue abierto.
+- **Qué parte exacta del +58% corresponde a cada cambio:** sigue abierto. Se midió entre campañas; repetirlo por separado no sería fiable ahora porque la velocidad del disco cambia de una sesión a otra.
+- **El JMH de búsqueda no monótono a pocos hilos** (916 µs con 2 y 719 con 4): no lo investigué.
 
 ### Limitaciones del diseño, ya documentadas
 
