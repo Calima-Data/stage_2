@@ -9,7 +9,7 @@
 | **Course** | Big Data, Grado en Ciencia e Ingeniería de Datos, Universidad de Las Palmas de Gran Canaria |
 | **Academic year** | 2026/2027 |
 | **Group** | Calima Data |
-| **Members** | Guillermo Oltra Rodriguez (student ID: to be added)<br>Abdelaziz Choukri (student ID: to be added) |
+| **Members** | Abdelaziz Choukri Mohamed (42247957Q)<br>Guillermo Oltra Rodriguez (49497939F)<br>Jose Jesus Perez Suarez (42421772C)<br>Livingstone Amanfo Ofori (student ID: to be added) |
 | **Repository** | https://github.com/Calima-Data/stage_2 |
 
 </div>
@@ -662,6 +662,10 @@ Everything in this section is a **proposal**, informed by the measurements but n
 - Batching several books into one transaction, which would touch each leaf page less often. Not tested, and it would delay publication.
 - Repeating the benchmarks on an isolated machine, to separate the disk stalls from the system.
 
+### Group contributions
+
+This section states plainly who did what, because the Git history alone does not show it. The Stage 2 commits (the `stage-2` branch, now `main`) were all made from Guillermo Oltra Rodriguez's account. The code, the measurements and this report were produced by him working with an AI assistant (Claude, from Anthropic), which wrote much of the code and text under his direction; every commit message records it. The other three members, Abdelaziz Choukri Mohamed, Jose Jesus Perez Suarez and Livingstone Amanfo Ofori, took part in the group's discussions and contributed ideas, and are credited here as members of the group, not as authors of specific commits. The Stage 1 history, in the same repository, has commits from Guillermo Oltra Rodriguez and from Abdelaziz Choukri Mohamed (under the Git names "Guille" and "Abdelaziz"). The same statement is in `CONTRIBUTIONS.md` at the root of the repository.
+
 ## Appendix: requirements and where they are met
 
 | Requirement (section of the assignment) | Where |
@@ -682,7 +686,7 @@ Everything in this section is a **proposal**, informed by the measurements but n
 | Thread and replica experiments, one factor at a time (6.2) | Sections 6.4 and 6.7 |
 | Integration metrics: throughput, latency with p95, CPU and memory, coordination (6.4) | `bench_integration.py`, `results/stage2/integration/`, section 6 |
 | Tables, charts, means, deviations, percentiles (6.5) | Section 6, `results/stage2/summary_tables.md`, `results/stage2/charts/` |
-| Report sections and cover (7.1) | This document. The cover has the members' names; the student IDs are not in the repository and must be added |
+| Report sections and cover (7.1) | This document. The cover lists the four members; one student ID is still to be added |
 | Repository named `stage_2` (7.2) | https://github.com/Calima-Data/stage_2, with the Stage 1 history and the Stage 2 branch as `main` |
 | README instructions (7.2) | `stage2/README.md` |
-| History with contributions from all members (7.2) | **Pending**: the Stage 1 history has two authors, and the Stage 2 commits have one |
+| History with contributions from all members (7.2) See "Group contributions" at the end of section 7: the Stage 2 commits were all made by one member, and the other members' part is described there |
