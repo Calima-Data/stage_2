@@ -683,6 +683,6 @@ Everything in this section is a **proposal**, informed by the measurements but n
 | Integration metrics: throughput, latency with p95, CPU and memory, coordination (6.4) | `bench_integration.py`, `results/stage2/integration/`, section 6 |
 | Tables, charts, means, deviations, percentiles (6.5) | Section 6, `results/stage2/summary_tables.md`, `results/stage2/charts/` |
 | Report sections and cover (7.1) | This document. The cover has the members' names; the student IDs are not in the repository and must be added |
-| Repository named `stage_2` (7.2) | **Pending**: this work is on branch `stage-2` of `stage_1`, and nothing has been pushed |
+| Repository named `stage_2` (7.2) | https://github.com/Calima-Data/stage_2, with the Stage 1 history and the Stage 2 branch as `main` |
 | README instructions (7.2) | `stage2/README.md` |
 | History with contributions from all members (7.2) | **Pending**: the Stage 1 history has two authors, and the Stage 2 commits have one |
