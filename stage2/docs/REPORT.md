@@ -9,7 +9,7 @@
 | **Course** | Big Data, Grado en Ciencia e Ingeniería de Datos, Universidad de Las Palmas de Gran Canaria |
 | **Academic year** | 2026/2027 |
 | **Group** | Calima Data |
-| **Members** | Abdelaziz Choukri Mohamed (42247957Q)<br>Guillermo Oltra Rodriguez (49497939F)<br>Jose Jesus Perez Suarez (42421772C)<br>Livingstone Amanfo Ofori (student ID: to be added) |
+| **Members** | Abdelaziz Choukri Mohamed (42247957Q)<br>Guillermo Oltra Rodriguez (49497939F)<br>Jose Jesus Perez Suarez (42421772C)<br>Livingstone Amanfo Ofori |
 | **Repository** | https://github.com/Calima-Data/stage_2 |
 
 </div>
