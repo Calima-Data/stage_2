@@ -157,7 +157,7 @@ En conjunto, el rendimiento pasó de **4,10 a 6,46 libros/s (+58%)**.
 
 1. **Portada del informe:** tiene los cuatro miembros, con los tres DNI que me diste y el curso **2026-2027** (confirmado en tus informes individuales). Falta el **ID de Livingstone Amanfo Ofori**: se completa en `stage2/docs/REPORT.md` y se regenera con `python scripts/build_pdf.py docs/REPORT.md`.
 2. **Repositorio:** creado y subido: https://github.com/Calima-Data/stage_2 (rama `main` = esta rama `stage-2`, con el historial del Stage 1 y del Stage 2). Lo creé **privado**, porque no me dejaron crearlo público; los profesores necesitan acceso, así que hazlo público (Settings → Danger zone → Change visibility) o añádelos como colaboradores.
-3. **Historial de Git:** los commits del Stage 2 son todos de una cuenta, y no se ha tocado la autoría. Para que los profesores lo vean claro, el informe (final de la sección 7, «Group contributions») y `CONTRIBUTIONS.md` dicen que el código, las medidas y el informe los hizo Guillermo con ayuda de una IA, y que los otros tres miembros aportaron ideas y discusión. Si algún miembro quiere aparecer con commits propios, que los haga él.
+3. **Historial de Git:** el enunciado pide «un historial con contribuciones de todos los miembros». Los commits del Stage 2 son todos de una cuenta y no se ha tocado la autoría; no hay ningún fichero de contribuciones porque el enunciado no lo exige. Si algún miembro quiere aparecer con commits propios, que los haga él.
 4. **Defensa oral:** este trabajo se hizo con mucha ayuda de una IA, y cada miembro debe poder explicarlo y justificarlo. Lee el informe y `DECISIONS.md`.
 
 ### Limitaciones de las medidas
