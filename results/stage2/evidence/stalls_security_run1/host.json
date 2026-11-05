@@ -1,0 +1,23 @@
+{
+  "os": "Windows-11-10.0.26300-SP0",
+  "logical_cpus": 16,
+  "physical_cpus": 8,
+  "ram_gb": 15.4,
+  "java": [
+    "openjdk version \"17.0.20.1\" 2026-08-18",
+    "OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)",
+    "OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)"
+  ],
+  "python": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+  "commit": "68416ee29a31a334245f92cd3ed4e6a61925eb08",
+  "working_tree_dirty": true,
+  "topology_note": "All processes, including the load generator and the Gutenberg stand-in, run on this host.",
+  "warmup_s": 5,
+  "measure_s": 15,
+  "sample_seconds": 0.5,
+  "heap_per_service": "-Xmx1g",
+  "default_http_threads": "Javalin default: Jetty pool of at most 250 threads",
+  "started_at": "2026-11-05T12:02:09",
+  "cpu": "AMD Ryzen 7 4800H with Radeon Graphics",
+  "storage": "INTEL SSDPEKNW512G8L SSD NVMe"
+}
